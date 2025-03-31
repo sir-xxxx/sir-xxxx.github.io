@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <title>
+SwampCTF: You Shall Not Passss | Sir_X Blog
+</title>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<link rel="stylesheet" href="/css/syntax.css">
+
+<meta name="generator" content="Hugo 0.145.0">
+
+
+<link rel="canonical" href="https://sir-xxxx.github.io/posts/you_shall_not_passss/" >
+
+
+
+
+<link href="/css/style.min.9a2b65a89f4b739d182c3eee1059252ff56c1ba33d40d97d6f7f4c6e35c2b476.css" rel="stylesheet">
+
+
+
+
+</head>
+
+<body>
+
+    <div class="flexWrapper">
+        <header class="headerWrapper">
+    <div class="header">
+        <div>
+            <a class="terminal" href="https://sir-xxxx.github.io/">
+                <span>blog@sir_x.github.io ~ $</span>
+            </a>
+        </div>
+        <input class="side-menu" type="checkbox" id="side-menu">
+        <label class="hamb" for="side-menu"><span class="hamb-line"></span></label>
+        <nav class="headerLinks">
+            <ul>
+                
+                <li>
+                    <a href="https://sir-xxxx.github.io/posts" title="" >
+                        ~/posts</a>
+                </li>
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="content">
+            <main class="main">
+                
+<div class="postWrapper">
+    <h1>SwampCTF: You Shall Not Passss</h1>
+    
+    
+    <section class="postMetadata">
+        <dl>
+            
+                
+<dt>tags</dt>
+<dd><span></span>
+    <a href="/tags/re/">#Re</a></dd>
+            
+            
+            
+            
+                <dt>published</dt>
+                
+                <dd><time datetime="2025-03-31">March 31, 2025</time></dd>
+            
+            
+                <dt>reading time</dt>
+                <dd>6 minutes</dd>
+            
+        </dl>
+    </section>
+    
+    
+    <aside class="toc-container">
+        <h2>Table of Contents</h2>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#description">Description</a></li>
+    <li><a href="#solution">Solution</a>
+      <ul>
+        <li><a href="#initial-static-analysis">Initial static Analysis</a></li>
+        <li><a href="#debugging-with-gdb">Debugging with GDB</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </aside>
+    
+    <div>
+        <p>This past weekend, I participated in <a href="https://ctf.swampctf.com/">SwampCTF</a> with the <a href="https://dombusters.github.io/">Dombusters</a> team. One of the reverse engineering challenges I solved, &ldquo;<a href="https://ctf.swampctf.com/challenges#You%20Shall%20Not%20Passss-2">You Shall Not Passss</a>&rdquo;, was interesting and, in my opinion, worth documenting for future reference.</p>
+<h2 id="description">Description</h2>
+<p>To enter in, you’ll need a key,<br>
+A secret code just meant for thee.<br>
+Type it right, don’t make a slip,<br>
+Or you’ll be locked out—oops, that’s it!</p>
+<h2 id="solution">Solution</h2>
+<h3 id="initial-static-analysis">Initial static Analysis</h3>
+<p>Using a decompiler like Ghidra, the main function and a subroutine <code>sub_17E0</code> were extracted. Here’s the relevant code:</p>
+<ul>
+<li><strong>main</strong></li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nl">main</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="kr">__int64</span> <span class="kr">__fastcall</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">a1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">a2</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">a3</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">char</span> <span class="o">*</span><span class="n">decrypted_flag_ptr</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">unk_4040</span><span class="p">;</span> <span class="c1">// Input buffer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">char</span> <span class="o">*</span><span class="n">key_stream_ptr</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">byte_4060</span><span class="p">;</span>           <span class="c1">// Key stream
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">seed</span> <span class="o">=</span> <span class="n">data_Seed</span><span class="p">;</span>                        <span class="c1">// Seed for key generation
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">char</span> <span class="o">*</span><span class="n">key_stream_iter</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">byte_4060</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// First encryption loop (28 bytes)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="o">++</span><span class="n">decrypted_flag_ptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">++</span><span class="n">key_stream_iter</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">seed</span> <span class="o">=</span> <span class="p">(</span><span class="mi">330</span> <span class="o">*</span> <span class="n">seed</span> <span class="o">+</span> <span class="mi">100</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2303</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="p">(</span><span class="n">decrypted_flag_ptr</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">^=</span> <span class="n">seed</span> <span class="o">^</span> <span class="o">*</span><span class="p">(</span><span class="n">key_stream_iter</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">while</span> <span class="p">((</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">unk_4040</span> <span class="o">+</span> <span class="mi">28</span> <span class="o">!=</span> <span class="n">decrypted_flag_ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Manual unrolling for remaining bytes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">v7</span> <span class="o">=</span> <span class="mi">330</span> <span class="o">*</span> <span class="n">seed</span> <span class="o">+</span> <span class="mi">100</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">byte_4030</span> <span class="o">^=</span> <span class="p">(</span><span class="n">v7</span> <span class="o">%</span> <span class="mi">2303</span><span class="p">)</span> <span class="o">^</span> <span class="n">byte_4060</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// ... (repeats for byte_4031 to byte_4039, byte_4020 to byte_4029)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">data_Seed</span> <span class="o">=</span> <span class="p">(</span><span class="mi">330</span> <span class="o">*</span> <span class="n">v25</span> <span class="o">+</span> <span class="mi">100</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2303</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Second encryption loop (189 bytes, unrelated?)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">v27</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">xmmword_4180</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">v27</span> <span class="o">=</span> <span class="p">(</span><span class="n">__int128</span> <span class="o">*</span><span class="p">)((</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">v27</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">++</span><span class="n">key_stream_ptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">v26</span> <span class="o">=</span> <span class="p">(</span><span class="mi">330</span> <span class="o">*</span> <span class="n">v26</span> <span class="o">+</span> <span class="mi">100</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2303</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="p">((</span><span class="n">_BYTE</span> <span class="o">*</span><span class="p">)</span><span class="n">v27</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">^=</span> <span class="n">v26</span> <span class="o">^</span> <span class="o">*</span><span class="p">(</span><span class="n">key_stream_ptr</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">while</span> <span class="p">((</span><span class="n">__int128</span> <span class="o">*</span><span class="p">)((</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">xmmword_4180</span> <span class="o">+</span> <span class="mi">189</span><span class="p">)</span> <span class="o">!=</span> <span class="n">v27</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">dword_4124</span> <span class="o">=</span> <span class="n">v26</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nf">sub_17E0</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0LL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li><strong>sub_17E0</strong></li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub_17E0</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">size_t</span> <span class="n">v0</span> <span class="o">=</span> <span class="nf">sysconf</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span> <span class="c1">// Page size
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kr">__m128i</span> <span class="o">*</span><span class="n">v1</span> <span class="o">=</span> <span class="p">(</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="nf">mmap</span><span class="p">(</span><span class="mi">0LL</span><span class="p">,</span> <span class="n">v0</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">34</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0LL</span><span class="p">);</span> <span class="c1">// Allocate executable memory
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">v1</span> <span class="o">==</span> <span class="p">(</span><span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="o">-</span><span class="mi">1LL</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;mmap&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">v2</span> <span class="o">=</span> <span class="n">v1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="n">v1</span> <span class="o">=</span> <span class="nf">_mm_load_si128</span><span class="p">((</span><span class="k">const</span> <span class="kr">__m128i</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">xmmword_4180</span><span class="p">);</span> <span class="c1">// Copy 189 bytes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// ... (11 more 16-byte loads, partial copy to v1[11])
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">((</span><span class="kt">void</span> <span class="p">(</span><span class="kr">__fastcall</span> <span class="o">*</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="p">))</span><span class="n">v1</span><span class="p">)(</span>
+</span></span><span class="line"><span class="cl">      <span class="o">&amp;</span><span class="n">unk_4040</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">byte_4030</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">byte_4020</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">unk_4260</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">unk_4140</span><span class="p">);</span> <span class="c1">// Execute as function
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">munmap</span><span class="p">(</span><span class="n">v2</span><span class="p">,</span> <span class="n">v0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>The challenge involves decrypting an encrypted buffer, which is then loaded into memory and executed as shellcode. Statically analyzing encrypted shellcode is difficult because the code remains obscured until runtime.
+Therefore, <code>gdb</code> is used to dynamically analyze the shellcode once it is decrypted and loaded into memory, allowing a easier examination of its functionality.</p>
+<h3 id="debugging-with-gdb">Debugging with GDB</h3>
+<p>Debugging poses challenges because breakpoints needed to be set on memory addresses that are only available after the program starts executing.<br>
+My approach is to execute the binary in <code>gdb</code>, wait for the &ldquo;Please Enter the Password:&rdquo; prompt of this challenge, and then manually interrupt execution using <code>ctrl+c</code>.<br>
+At this point, breakpoints can be set in the dynamically allocated memory region since the addresses are now available. The next step is to identify where to set those breakpoints.</p>
+<ul>
+<li>Disassembly at the Prompt
+The disassembly at the &ldquo;Please Enter the Password&rdquo; prompt is as follows:</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf031</span>  <span class="n">mov</span>    <span class="n">edx</span><span class="p">,</span> <span class="mh">0x24</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf036</span>  <span class="n">xor</span>    <span class="n">eax</span><span class="p">,</span> <span class="n">eax</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf038</span>  <span class="n">syscall</span> 
+</span></span><span class="line"><span class="cl"><span class="err">→</span><span class="mh">0x7ffff7fbf03a</span>  <span class="n">mov</span>    <span class="n">eax</span><span class="p">,</span> <span class="mh">0x1</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf03f</span>  <span class="n">mov</span>    <span class="n">ecx</span><span class="p">,</span> <span class="mh">0xc74f08c9</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf044</span>  <span class="n">xor</span>    <span class="n">edx</span><span class="p">,</span> <span class="n">edx</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf046</span>  <span class="n">mov</span>    <span class="n">esi</span><span class="p">,</span> <span class="mh">0x1</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf04b</span>  <span class="n">imul</span>   <span class="n">eax</span><span class="p">,</span> <span class="n">eax</span><span class="p">,</span> <span class="mh">0x14a</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf051</span>  <span class="n">add</span>    <span class="n">eax</span><span class="p">,</span> <span class="mh">0x64</span>
+</span></span></code></pre></div><p>The syscall is made right before the current instruction pointer (<code>rip</code>). Since the <code>eax</code> register is set to 0, this indicates a <code>read</code> syscall, which is logical for reading a password. The value <code>0x24</code> in the <code>edx</code> register specifies the number of bytes to be read, suggesting that the password/flag is 36 bytes long.
+The verification of these bytes is still an unknown. Therefore more of the shellcode needs to be disassembled and analyzed. Since there needs to be some verification logic there likely is some comparison and jump instruction based on that. To see further instructions after the input, the disassembly can be single stepped (<code>ni</code>) after inputting a fake password.
+The next notable jump instruction is <code>jne</code> at <code>0x7ffff7fbf04b</code>.<br>
+Looking at that jump instruction more in detail it shows that its actually a verification loop for the input:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf04b</span>  <span class="n">imul</span>   <span class="n">eax</span><span class="p">,</span> <span class="n">eax</span><span class="p">,</span> <span class="mh">0x14a</span>      <span class="p">;</span> <span class="n">Generate</span> <span class="n">key</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf051</span>  <span class="n">add</span>    <span class="n">eax</span><span class="p">,</span> <span class="mh">0x64</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf076</span>  <span class="n">sub</span>    <span class="n">eax</span><span class="p">,</span> <span class="n">edi</span>             <span class="p">;</span> <span class="n">al</span> <span class="o">=</span> <span class="n">key</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf078</span>  <span class="n">movzx</span>  <span class="n">edi</span><span class="p">,</span> <span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">r12</span><span class="o">+</span><span class="n">rdx</span><span class="o">*</span><span class="mi">1</span><span class="p">]</span>  <span class="p">;</span> <span class="n">Input</span> <span class="n">byte</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf07d</span>  <span class="n">xor</span>    <span class="n">dil</span><span class="p">,</span> <span class="n">al</span>              <span class="p">;</span> <span class="n">Encrypt</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf084</span>  <span class="n">movsx</span>  <span class="n">r8d</span><span class="p">,</span> <span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[</span><span class="n">r15</span><span class="o">+</span><span class="n">rdx</span><span class="o">*</span><span class="mi">1</span><span class="p">]</span>  <span class="p">;</span> <span class="n">Expected</span> <span class="n">byte</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf089</span>  <span class="n">cmp</span>    <span class="n">dil</span><span class="p">,</span> <span class="n">r8b</span>             <span class="p">;</span> <span class="n">Compare</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf08c</span>  <span class="n">cmovne</span> <span class="n">esi</span><span class="p">,</span> <span class="n">r13d</span>            <span class="p">;</span> <span class="n">Set</span> <span class="n">esi</span> <span class="k">if</span> <span class="n">mismatch</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf090</span>  <span class="n">inc</span>    <span class="n">rdx</span>                  <span class="p">;</span> <span class="n">Next</span> <span class="n">byte</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf093</span>  <span class="n">cmp</span>    <span class="n">rdx</span><span class="p">,</span> <span class="mh">0x24</span>            <span class="p">;</span> <span class="mi">36</span> <span class="n">iterations</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf097</span>  <span class="n">jne</span>    <span class="mh">0x7ffff7fbf04b</span>       <span class="p">;</span> <span class="n">Loop</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x7ffff7fbf099</span>  <span class="n">test</span>   <span class="n">esi</span><span class="p">,</span> <span class="n">esi</span>             <span class="p">;</span> <span class="n">Success</span> <span class="k">if</span> <span class="n">esi</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span></code></pre></div><p>The loop iterates over all 36 bytes and terminates on a wrong password. This enables dumping all characters in a single run without the need for repeated execution.<br>
+The input is encrypted and checked against values loaded from the <code>r15</code> register. Therefore, the next step is to dump the values at the address pointed to by <code>r15</code>.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="err">$</span><span class="n">r15</span>   <span class="p">:</span> <span class="mh">0x0000555555558140</span>
+</span></span><span class="line"><span class="cl"><span class="n">x</span><span class="o">/</span><span class="mi">36</span><span class="n">c</span> <span class="mh">0x555555558140</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0xdd</span> <span class="mh">0x9a</span> <span class="mh">0xde</span> <span class="mh">0x4e</span> <span class="mh">0x69</span> <span class="mh">0xe1</span> <span class="mh">0xe9</span> <span class="mh">0x2c</span> <span class="mh">0xd2</span> <span class="mh">0x4e</span> <span class="mh">0xec</span> <span class="mh">0xe7</span> <span class="mh">0x18</span> <span class="mh">0x26</span> <span class="mh">0x6a</span> <span class="mh">0x56</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x79</span> <span class="mh">0xd8</span> <span class="mh">0xa3</span> <span class="mh">0x55</span> <span class="mh">0x72</span> <span class="mh">0xbc</span> <span class="mh">0x76</span> <span class="mh">0xc4</span> <span class="mh">0x0c</span> <span class="mh">0x0f</span> <span class="mh">0x9b</span> <span class="mh">0xbe</span> <span class="mh">0xc6</span> <span class="mh">0x81</span> <span class="mh">0xe2</span> <span class="mh">0x41</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x47</span> <span class="mh">0xa0</span> <span class="mh">0xf4</span> <span class="mh">0x26</span>
+</span></span></code></pre></div><p>With the expected bytes after encryption, the next step is to obtain the encryption key used to encrypt the input. Based on the expected output and the keystream used the expected input can be determined.<br>
+At the address <code>0x7ffff7fbf07d</code> the xor operation responsible for the encryption of the input can be seen. The instruction shows that the encryption key byte is located in the <code>al</code> register at that point.<br>
+To dump the entire key a breakpoint can be set at that address and then the al register can be read.<br>
+Dumping all the <code>al</code> register values in the loop provides the entire XOR keystream needed to decrypt the flag.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="mh">0xae</span> <span class="mh">0xed</span> <span class="mh">0xbf</span> <span class="mh">0x23</span> <span class="mh">0x19</span> <span class="mh">0xa2</span> <span class="mh">0xbd</span> <span class="mh">0x6a</span> <span class="mh">0xa9</span> <span class="mh">0x7b</span> <span class="mh">0xdf</span> <span class="mh">0xd6</span> <span class="mh">0x5e</span> <span class="mh">0x79</span> <span class="mh">0x26</span> <span class="mh">0x66</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x38</span> <span class="mh">0x9c</span> <span class="mh">0x92</span> <span class="mh">0x1b</span> <span class="mh">0x35</span> <span class="mh">0xe3</span> <span class="mh">0x22</span> <span class="mh">0xf4</span> <span class="mh">0x58</span> <span class="mh">0x4e</span> <span class="mh">0xd7</span> <span class="mh">0xf2</span> <span class="mh">0x9f</span> <span class="mh">0xde</span> <span class="mh">0xb0</span> <span class="mh">0x14</span>
+</span></span><span class="line"><span class="cl"><span class="mh">0x0b</span> <span class="mh">0x93</span> <span class="mh">0xae</span> <span class="mh">0x5b</span>
+</span></span></code></pre></div><p>Now the encrypted flag can be decrypted to reveal the expected input.<br>
+The following Python script was created to decrypt the flag:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># Expected bytes (36) from 0x555555558140</span>
+</span></span><span class="line"><span class="cl"><span class="n">expected</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="mh">0xdd</span><span class="p">,</span> <span class="mh">0x9a</span><span class="p">,</span> <span class="mh">0xde</span><span class="p">,</span> <span class="mh">0x4e</span><span class="p">,</span> <span class="mh">0x69</span><span class="p">,</span> <span class="mh">0xe1</span><span class="p">,</span> <span class="mh">0xe9</span><span class="p">,</span> <span class="mh">0x2c</span><span class="p">,</span> <span class="mh">0xd2</span><span class="p">,</span> <span class="mh">0x4e</span><span class="p">,</span> <span class="mh">0xec</span><span class="p">,</span> <span class="mh">0xe7</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="mh">0x18</span><span class="p">,</span> <span class="mh">0x26</span><span class="p">,</span> <span class="mh">0x6a</span><span class="p">,</span> <span class="mh">0x56</span><span class="p">,</span> <span class="mh">0x79</span><span class="p">,</span> <span class="mh">0xd8</span><span class="p">,</span> <span class="mh">0xa3</span><span class="p">,</span> <span class="mh">0x55</span><span class="p">,</span> <span class="mh">0x72</span><span class="p">,</span> <span class="mh">0xbc</span><span class="p">,</span> <span class="mh">0x76</span><span class="p">,</span> <span class="mh">0xc4</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="mh">0x0c</span><span class="p">,</span> <span class="mh">0x0f</span><span class="p">,</span> <span class="mh">0x9b</span><span class="p">,</span> <span class="mh">0xbe</span><span class="p">,</span> <span class="mh">0xc6</span><span class="p">,</span> <span class="mh">0x81</span><span class="p">,</span> <span class="mh">0xe2</span><span class="p">,</span> <span class="mh">0x41</span><span class="p">,</span> <span class="mh">0x47</span><span class="p">,</span> <span class="mh">0xa0</span><span class="p">,</span> <span class="mh">0xf4</span><span class="p">,</span> <span class="mh">0x26</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># XOR keys (al) from GDB (36 bytes)</span>
+</span></span><span class="line"><span class="cl"><span class="n">al_keys</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="mh">0xae</span><span class="p">,</span> <span class="mh">0xed</span><span class="p">,</span> <span class="mh">0xbf</span><span class="p">,</span> <span class="mh">0x23</span><span class="p">,</span> <span class="mh">0x19</span><span class="p">,</span> <span class="mh">0xa2</span><span class="p">,</span> <span class="mh">0xbd</span><span class="p">,</span> <span class="mh">0x6a</span><span class="p">,</span> <span class="mh">0xa9</span><span class="p">,</span> <span class="mh">0x7b</span><span class="p">,</span> <span class="mh">0xdf</span><span class="p">,</span> <span class="mh">0xd6</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="mh">0x5e</span><span class="p">,</span> <span class="mh">0x79</span><span class="p">,</span> <span class="mh">0x26</span><span class="p">,</span> <span class="mh">0x66</span><span class="p">,</span> <span class="mh">0x38</span><span class="p">,</span> <span class="mh">0x9c</span><span class="p">,</span> <span class="mh">0x92</span><span class="p">,</span> <span class="mh">0x1b</span><span class="p">,</span> <span class="mh">0x35</span><span class="p">,</span> <span class="mh">0xe3</span><span class="p">,</span> <span class="mh">0x22</span><span class="p">,</span> <span class="mh">0xf4</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="mh">0x58</span><span class="p">,</span> <span class="mh">0x4e</span><span class="p">,</span> <span class="mh">0xd7</span><span class="p">,</span> <span class="mh">0xf2</span><span class="p">,</span> <span class="mh">0x9f</span><span class="p">,</span> <span class="mh">0xde</span><span class="p">,</span> <span class="mh">0xb0</span><span class="p">,</span> <span class="mh">0x14</span><span class="p">,</span> <span class="mh">0x0b</span><span class="p">,</span> <span class="mh">0x93</span><span class="p">,</span> <span class="mh">0xae</span><span class="p">,</span> <span class="mh">0x5b</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">flag</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">36</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">flag</span> <span class="o">+=</span> <span class="nb">chr</span><span class="p">(</span><span class="n">expected</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">^</span> <span class="n">al_keys</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Flag: &#34;</span> <span class="o">+</span> <span class="n">flag</span><span class="p">)</span>
+</span></span></code></pre></div>
+    </div>
+</div>
+
+            </main>
+        </div>
+
+
+        <footer class="footer">
+    
+        <span>
+            © 2025 Sir_X Blog, Built with
+            <a href="https://gohugo.io" class="footerLink">Hugo</a> and
+            <a href="https://github.com/LordMathis/hugo-theme-nightfall" class="footerLink">Nightfall</a> theme
+        </span>
+    
+</footer>
+    </div>
+
+</body>
+
+</html>

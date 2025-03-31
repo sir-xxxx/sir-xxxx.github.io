@@ -8,8 +8,15 @@
     <language>en-us</language>
     <managingEditor>sir_xxxx@protonmail.com (Sir_X Blog)</managingEditor>
     <webMaster>sir_xxxx@protonmail.com (Sir_X Blog)</webMaster>
-    <lastBuildDate>Thu, 20 Mar 2025 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 31 Mar 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sir-xxxx.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>SwampCTF: You Shall Not Passss</title>
+      <link>https://sir-xxxx.github.io/posts/you_shall_not_passss/</link>
+      <pubDate>Mon, 31 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
+      <guid>https://sir-xxxx.github.io/posts/you_shall_not_passss/</guid>
+      <description>This writeup details the solution to the &amp;ldquo;You Shall Not Passss&amp;rdquo; reverse engineering challenge from SwampCTF, involving dynamic analysis with Ghidra and gdb to decrypt the flag, and analysis of shellcode execution.</description>
+    </item>
     <item>
       <title>Try Hack Me Hackfinity Battle CTF</title>
       <link>https://sir-xxxx.github.io/posts/thmhackfinitybattle/</link>
