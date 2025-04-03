@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Sir_X Blog</title>
-    <link>https://sir-xxxx.github.io/</link>
-    <description>Recent content on Sir_X Blog</description>
+    <title>XeroExecute Blog</title>
+    <link>https://XeroExecute.github.io/</link>
+    <description>Recent content on XeroExecute Blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <managingEditor>sir_xxxx@protonmail.com (Sir_X Blog)</managingEditor>
-    <webMaster>sir_xxxx@protonmail.com (Sir_X Blog)</webMaster>
+    <managingEditor>sir_xxxx@protonmail.com (XeroExecute Blog)</managingEditor>
+    <webMaster>sir_xxxx@protonmail.com (XeroExecute Blog)</webMaster>
     <lastBuildDate>Mon, 31 Mar 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://sir-xxxx.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://XeroExecute.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>SwampCTF: You Shall Not Passss</title>
-      <link>https://sir-xxxx.github.io/posts/you_shall_not_passss/</link>
-      <pubDate>Mon, 31 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/posts/you_shall_not_passss/</guid>
+      <link>https://XeroExecute.github.io/posts/you_shall_not_passss/</link>
+      <pubDate>Mon, 31 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/posts/you_shall_not_passss/</guid>
       <description>This writeup details the solution to the &amp;ldquo;You Shall Not Passss&amp;rdquo; reverse engineering challenge from SwampCTF, involving dynamic analysis with Ghidra and gdb to decrypt the flag, and analysis of shellcode execution.</description>
     </item>
     <item>
       <title>Try Hack Me Hackfinity Battle CTF</title>
-      <link>https://sir-xxxx.github.io/posts/thmhackfinitybattle/</link>
-      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/posts/thmhackfinitybattle/</guid>
+      <link>https://XeroExecute.github.io/posts/thmhackfinitybattle/</link>
+      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/posts/thmhackfinitybattle/</guid>
       <description>Try Hack Me Hackfinity Battle CTF Writeups</description>
     </item>
     <item>
       <title>noscript (web)</title>
-      <link>https://sir-xxxx.github.io/posts/noscript/</link>
-      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/posts/noscript/</guid>
+      <link>https://XeroExecute.github.io/posts/noscript/</link>
+      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/posts/noscript/</guid>
       <description>Ignite it to steal the cookie!</description>
     </item>
   </channel>

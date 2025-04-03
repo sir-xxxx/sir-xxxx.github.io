@@ -1,62 +1,62 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Tags on Sir_X Blog</title>
-    <link>https://sir-xxxx.github.io/tags/</link>
-    <description>Recent content in Tags on Sir_X Blog</description>
+    <title>Tags on XeroExecute Blog</title>
+    <link>https://XeroExecute.github.io/tags/</link>
+    <description>Recent content in Tags on XeroExecute Blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <managingEditor>sir_xxxx@protonmail.com (Sir_X Blog)</managingEditor>
-    <webMaster>sir_xxxx@protonmail.com (Sir_X Blog)</webMaster>
+    <managingEditor>sir_xxxx@protonmail.com (XeroExecute Blog)</managingEditor>
+    <webMaster>sir_xxxx@protonmail.com (XeroExecute Blog)</webMaster>
     <lastBuildDate>Mon, 31 Mar 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://sir-xxxx.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://XeroExecute.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Re</title>
-      <link>https://sir-xxxx.github.io/tags/re/</link>
-      <pubDate>Mon, 31 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/tags/re/</guid>
+      <link>https://XeroExecute.github.io/tags/re/</link>
+      <pubDate>Mon, 31 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/tags/re/</guid>
       <description></description>
     </item>
     <item>
       <title>Cloud</title>
-      <link>https://sir-xxxx.github.io/tags/cloud/</link>
-      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/tags/cloud/</guid>
+      <link>https://XeroExecute.github.io/tags/cloud/</link>
+      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/tags/cloud/</guid>
       <description></description>
     </item>
     <item>
       <title>Forensics</title>
-      <link>https://sir-xxxx.github.io/tags/forensics/</link>
-      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/tags/forensics/</guid>
+      <link>https://XeroExecute.github.io/tags/forensics/</link>
+      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/tags/forensics/</guid>
       <description></description>
     </item>
     <item>
       <title>Pwn</title>
-      <link>https://sir-xxxx.github.io/tags/pwn/</link>
-      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/tags/pwn/</guid>
+      <link>https://XeroExecute.github.io/tags/pwn/</link>
+      <pubDate>Thu, 20 Mar 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/tags/pwn/</guid>
       <description></description>
     </item>
     <item>
       <title>Ctf</title>
-      <link>https://sir-xxxx.github.io/tags/ctf/</link>
-      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/tags/ctf/</guid>
+      <link>https://XeroExecute.github.io/tags/ctf/</link>
+      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/tags/ctf/</guid>
       <description></description>
     </item>
     <item>
       <title>Web</title>
-      <link>https://sir-xxxx.github.io/tags/web/</link>
-      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/tags/web/</guid>
+      <link>https://XeroExecute.github.io/tags/web/</link>
+      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/tags/web/</guid>
       <description></description>
     </item>
     <item>
       <title>Xss</title>
-      <link>https://sir-xxxx.github.io/tags/xss/</link>
-      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/tags/xss/</guid>
+      <link>https://XeroExecute.github.io/tags/xss/</link>
+      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/tags/xss/</guid>
       <description></description>
     </item>
   </channel>

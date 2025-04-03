@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Ctf on Sir_X Blog</title>
-    <link>https://sir-xxxx.github.io/tags/ctf/</link>
-    <description>Recent content in Ctf on Sir_X Blog</description>
+    <title>Ctf on XeroExecute Blog</title>
+    <link>https://XeroExecute.github.io/tags/ctf/</link>
+    <description>Recent content in Ctf on XeroExecute Blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <managingEditor>sir_xxxx@protonmail.com (Sir_X Blog)</managingEditor>
-    <webMaster>sir_xxxx@protonmail.com (Sir_X Blog)</webMaster>
+    <managingEditor>sir_xxxx@protonmail.com (XeroExecute Blog)</managingEditor>
+    <webMaster>sir_xxxx@protonmail.com (XeroExecute Blog)</webMaster>
     <lastBuildDate>Fri, 21 Jun 2024 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://sir-xxxx.github.io/tags/ctf/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://XeroExecute.github.io/tags/ctf/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>noscript (web)</title>
-      <link>https://sir-xxxx.github.io/posts/noscript/</link>
-      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (Sir_X Blog)</author>
-      <guid>https://sir-xxxx.github.io/posts/noscript/</guid>
+      <link>https://XeroExecute.github.io/posts/noscript/</link>
+      <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/posts/noscript/</guid>
       <description>Ignite it to steal the cookie!</description>
     </item>
   </channel>
