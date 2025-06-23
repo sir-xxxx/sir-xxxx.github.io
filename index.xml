@@ -25,6 +25,13 @@
       <description>Try Hack Me Hackfinity Battle CTF Writeups</description>
     </item>
     <item>
+      <title>Sqlate IrisCTF 2025 (pwn)</title>
+      <link>https://XeroExecute.github.io/posts/sqlate/</link>
+      <pubDate>Mon, 06 Jan 2025 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/posts/sqlate/</guid>
+      <description>Exploit writeup for the Sqlate challenge from IrisCTF 2025 by lambda, involving a buffer overflow in a custom encoding mechanism to escalate privileges and retrieve the flag.</description>
+    </item>
+    <item>
       <title>noscript (web)</title>
       <link>https://XeroExecute.github.io/posts/noscript/</link>
       <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
