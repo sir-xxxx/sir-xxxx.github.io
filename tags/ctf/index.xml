@@ -18,6 +18,13 @@
       <description>Exploit writeup for the Sqlate challenge from IrisCTF 2025 by lambda, involving a buffer overflow in a custom encoding mechanism to escalate privileges and retrieve the flag.</description>
     </item>
     <item>
+      <title>Huntress2024</title>
+      <link>https://XeroExecute.github.io/posts/huntress2024/</link>
+      <pubDate>Thu, 31 Oct 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
+      <guid>https://XeroExecute.github.io/posts/huntress2024/</guid>
+      <description>My notes on five challenges from Huntress CTF 2024: Whamazon, Keyboard Junkie, MOVEable, Strange Calc and OceanLocust. The challenges were solved as part of the Dombusters team.</description>
+    </item>
+    <item>
       <title>noscript (web)</title>
       <link>https://XeroExecute.github.io/posts/noscript/</link>
       <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate><author>sir_xxxx@protonmail.com (XeroExecute Blog)</author>
